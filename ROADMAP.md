@@ -283,11 +283,11 @@ npm run test:e2e
 ### Đang thực hiện (In Progress)
 
 - 🚀 **Mốc 25 — Production Deployment:** Triển khai Cloud Infrastructure trên Vercel + Neon Serverless Postgres (`ap-southeast-1`) + Cloudflare R2 Object Storage.
-  - ✅ **D1 (Đã hoàn thành 100%):** Storage Modernization — `@aws-sdk/client-s3`, driver `r2-attachment-storage.ts`, dispatcher 3-tier (`R2 → Local → Noop`) với cơ chế auto-fallback. 448/448 tests passed.
+  - ✅ **D1 (Đã hoàn thành 100%):** Storage Modernization — `@aws-sdk/client-s3`, driver `r2-attachment-storage.ts`, dispatcher 3-tier (`R2 → Local → Noop`) với cơ chế auto-fallback. 447/447 tests passed.
   - ✅ **D2 (Đã hoàn thành 100%):** Neon Database Provisioning — Schema sync, Full-Text Search trigger & GIN index, seed 4 tài khoản demo.
   - ⏭️ **D3 (Tạm hoãn):** Cloudflare R2 Provisioning — Bỏ qua cho lần deploy đầu. Tính năng Attachment vẫn hoạt động trên local dev; trên Vercel production trả lỗi thân thiện qua `NoopAttachmentStorage` thay vì crash app.
-  - ⏳ **D4 (Tiếp theo):** Vercel Deployment & Environment Variables — Import GitHub repo, cấu hình `DATABASE_URL` (Neon Pooled), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NODE_ENV=production`, kích hoạt build.
-  - ⬜ **D5:** Production Smoke Test (10 kịch bản).
+  - ✅ **D4 (Đã hoàn thành 100%):** Vercel Deployment & Environment Variables — GitHub repo `bhuy1313/mini-jira`, env vars (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`) cấu hình thành công, build & deploy thành công trên Vercel Production!
+  - ⏳ **D5 (Đang thực hiện):** Production Smoke Test — Kiểm thử các kịch bản thực tế trên URL live.
 
 ### Hướng dẫn cho Coding Agent tiếp theo (Khi tiếp tục phát triển trong tương lai)
 
