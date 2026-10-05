@@ -47,6 +47,7 @@ export function WorkspaceNav({
           <Link
             key={item.href}
             href={item.href}
+            prefetch={true}
             aria-current={active ? "page" : undefined}
             className={cn(
               "group inline-flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
