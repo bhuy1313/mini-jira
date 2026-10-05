@@ -2,7 +2,7 @@ import { UsersIcon } from "@/components/ui/icons";
 import { InviteMemberButton } from "@/features/workspaces/components/invite-member-modal";
 import { MembersList } from "@/features/workspaces/components/members-list";
 import { canAddMember } from "@/features/authorization/permissions";
-import { getWorkspaceContext } from "@/features/workspaces/queries";
+import { getWorkspaceContext, getWorkspaceMembers } from "@/features/workspaces/queries";
 
 export default async function WorkspaceMembersPage({
   params,
@@ -10,7 +10,10 @@ export default async function WorkspaceMembersPage({
   params: Promise<{ workspaceId: string }>;
 }) {
   const { workspaceId } = await params;
-  const { actor, ws, members } = await getWorkspaceContext(workspaceId);
+  const [{ ws, actor }, members] = await Promise.all([
+    getWorkspaceContext(workspaceId),
+    getWorkspaceMembers(workspaceId),
+  ]);
 
   return (
     <div className="space-y-6">

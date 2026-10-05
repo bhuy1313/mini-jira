@@ -674,7 +674,7 @@ export function KanbanBoard({
   }
 
   useLiveEvents(workspaceId, (event) => {
-    if (event.kind !== "board" || event.projectId !== projectId) return;
+    if (event.kind !== "board" || (event.projectId && event.projectId !== projectId)) return;
     if (isDraggingRef.current) return;
     if (refreshTimerRef.current !== null) return;
     refreshTimerRef.current = setTimeout(() => {

@@ -8,7 +8,7 @@ import { NotificationBell } from "@/features/notifications/components/notificati
 import { getNotificationData } from "@/features/notifications/queries";
 import { WorkspaceNav } from "@/features/workspaces/components/workspace-nav";
 import { WorkspaceSwitcher } from "@/features/workspaces/components/workspace-switcher";
-import { getWorkspaceContext, getUserWorkspaces } from "@/features/workspaces/queries";
+import { getWorkspaceContext, getWorkspaceMembers, getUserWorkspaces } from "@/features/workspaces/queries";
 import { getSessionUser } from "@/features/workspaces/session";
 
 export const dynamic = "force-dynamic";
@@ -21,14 +21,17 @@ export default async function WorkspaceLayout({
   params: Promise<{ workspaceId: string }>;
 }) {
   const { workspaceId } = await params;
-  const [ctx, workspaces, notificationData, user] = await Promise.all([
+  const [ctx, notificationData, user, workspaces] = await Promise.all([
     getWorkspaceContext(workspaceId),
-    getUserWorkspaces(),
     getNotificationData(),
     getSessionUser(),
+    getUserWorkspaces(),
   ]);
   const { ws, actor } = ctx;
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : actor.userId.charAt(0).toUpperCase();
+
+  // Fetch members on-demand (not on initial render)
+  const members = await getWorkspaceMembers(workspaceId);
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -63,7 +66,7 @@ export default async function WorkspaceLayout({
 
           {/* Fixed Footer: User profile & Logout - ALWAYS visible at viewport bottom */}
           <div className="shrink-0 border-t border-rule p-3 bg-panel">
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-rule/70 bg-paper/60 p-2 transition-colors hover:border-rule-strong hover:bg-paper">
+            <div className="flex items-center justify-between rounded-xl border border-rule/70 bg-paper/60 p-2 transition-colors hover:border-rule-strong hover:bg-paper">
               <Link
                 href="/account"
                 className="group flex min-w-0 flex-1 items-center gap-2.5 text-xs text-ink-soft hover:text-ink transition-colors focus-visible:outline-none"

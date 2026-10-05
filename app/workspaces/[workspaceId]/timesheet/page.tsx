@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { ClockIcon } from "@/components/ui/icons";
 import { requireActor } from "@/features/workspaces/session";
-import { getWorkspaceContext } from "@/features/workspaces/queries";
+import { getWorkspaceContext, getWorkspaceMembers } from "@/features/workspaces/queries";
 import { getWorkspaceProjectLists } from "@/features/projects/queries";
 import { prismaWorklogRepository } from "@/features/worklogs/prisma-worklog-repository";
 import { prismaWorkspaceRepository } from "@/features/workspaces/prisma-workspace-repository";
@@ -35,10 +35,9 @@ export default async function TimesheetPage({
   const actor = await requireActor(workspaceId).catch(() => null);
   if (!actor) redirect("/workspaces");
 
-  const [{ ws, members }, projectLists] = await Promise.all([
-    getWorkspaceContext(workspaceId),
-    getWorkspaceProjectLists(workspaceId),
-  ]);
+  const { ws } = await getWorkspaceContext(workspaceId);
+  const members = await getWorkspaceMembers(workspaceId);
+  const projectLists = await getWorkspaceProjectLists(workspaceId);
 
   const defaultRange = getWeekDateRange();
   const initialReport = await timesheetService.getTimesheetReport(actor, {

@@ -16,15 +16,19 @@ export const getUserWorkspaces = cache(async () => {
   return workspaceService.listWorkspacesForUser({ userId: user.id });
 });
 
-/** Workspace hiện tại + actor + thông tin hiển thị; nếu không phải member → redirect /workspaces. Memoized per request. */
+/** Workspace hiện tại + actor - essential data needed for layout. Memoized per request. */
 export const getWorkspaceContext = cache(async (workspaceId: string) => {
   const actor = await requireActor(workspaceId).catch(() => null);
   if (!actor) redirect("/workspaces");
-  const [ws, members] = await Promise.all([
-    workspaceService.getWorkspace(actor),
-    workspaceService.listMembers(actor),
-  ]);
-  return { actor, ws, members };
+  const ws = await workspaceService.getWorkspace(actor);
+  return { actor, ws };
+});
+
+/** Danh sách members của workspace - fetched on-demand, not on layout init. */
+export const getWorkspaceMembers = cache(async (workspaceId: string) => {
+  const actor = await requireActor(workspaceId).catch(() => null);
+  if (!actor) return [];
+  return workspaceService.listMembers(actor);
 });
 
 export type WorkspacePageData = Awaited<ReturnType<typeof getWorkspaceContext>>;

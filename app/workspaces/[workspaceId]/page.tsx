@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/icons";
 import { createProjectService } from "@/features/projects/project-service";
 import { prismaProjectRepository } from "@/features/projects/prisma-project-repository";
-import { getWorkspaceContext } from "@/features/workspaces/queries";
+import { getWorkspaceContext, getWorkspaceMembers } from "@/features/workspaces/queries";
 import { requireActor } from "@/features/workspaces/session";
 import { WorkspaceAvatar } from "@/features/workspaces/components/workspace-avatar";
 import { cn } from "@/lib/cn";
@@ -28,10 +28,12 @@ export default async function WorkspaceHomePage({
   const actor = await requireActor(workspaceId).catch(() => null);
   if (!actor) redirect("/workspaces");
 
-  const [{ ws, members }, activeProjects] = await Promise.all([
+  const [ctx, activeProjects] = await Promise.all([
     getWorkspaceContext(workspaceId),
     projectService.listProjects(actor),
   ]);
+  const { ws } = ctx;
+  const members = await getWorkspaceMembers(workspaceId);
 
   return (
     <div className="space-y-6">

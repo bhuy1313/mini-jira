@@ -25,22 +25,43 @@ export function useLiveEvents(
   useEffect(() => {
     if (!workspaceId) return;
 
-    const source = new EventSource(
-      `/api/live/stream?workspaceId=${encodeURIComponent(workspaceId)}`,
-    );
+    let source: EventSource | null = null;
+    try {
+      source = new EventSource(
+        `/api/live/stream?workspaceId=${encodeURIComponent(workspaceId)}`,
+      );
 
-    function handle(message: MessageEvent<string>) {
-      try {
-        handlerRef.current(JSON.parse(message.data) as LiveEvent);
-      } catch {
-        // frame không hợp lệ — bỏ qua.
+      function handle(message: MessageEvent<string>) {
+        try {
+          handlerRef.current(JSON.parse(message.data) as LiveEvent);
+        } catch {
+          // frame không hợp lệ — bỏ qua.
+        }
       }
+
+      source.addEventListener("board", handle);
+      source.addEventListener("notify", handle);
+      source.addEventListener("notifyRead", handle);
+    } catch {
+      // EventSource failed or unsupported
     }
 
-    source.addEventListener("board", handle);
-    source.addEventListener("notify", handle);
-    source.addEventListener("notifyRead", handle);
+    // Fallback polling for Serverless environments (like Vercel) where SSE memory is isolated
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        handlerRef.current({ kind: "board", workspaceId } as unknown as LiveEvent);
+      }
+    }, 3000);
 
-    return () => source.close();
+    const handleFocus = () => {
+      handlerRef.current({ kind: "board", workspaceId } as unknown as LiveEvent);
+    };
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      source?.close();
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, [workspaceId]);
 }

@@ -52,11 +52,8 @@ function message(error: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-function boardPath(workspaceId: string, projectId: string): string[] {
-  return [
-    `/workspaces/${workspaceId}/projects/${projectId}`,
-    `/workspaces/${workspaceId}/projects/${projectId}/settings`,
-  ];
+function boardPath(workspaceId: string, projectId: string): string {
+  return `/workspaces/${workspaceId}/projects/${projectId}`;
 }
 
 /** Create a task in an active project — any member (FR-040). */
@@ -97,9 +94,7 @@ export async function createTaskAction(
   } catch (error) {
     return { error: message(error) };
   }
-  for (const path of boardPath(workspaceId, projectId)) {
-    revalidatePath(path);
-  }
+  revalidatePath(boardPath(workspaceId, projectId));
   publishBoardUpdate(workspaceId, projectId, actor.userId);
   return {};
 }
@@ -120,9 +115,7 @@ export async function moveTaskAction(
   } catch (error) {
     return { error: message(error) };
   }
-  for (const path of boardPath(workspaceId, projectId)) {
-    revalidatePath(path);
-  }
+  revalidatePath(boardPath(workspaceId, projectId));
   publishBoardUpdate(workspaceId, projectId, actor.userId);
   return {};
 }
@@ -143,9 +136,7 @@ export async function moveTaskToIndexAction(
   } catch (error) {
     return { error: message(error) };
   }
-  for (const path of boardPath(workspaceId, projectId)) {
-    revalidatePath(path);
-  }
+  revalidatePath(boardPath(workspaceId, projectId));
   publishBoardUpdate(workspaceId, projectId, actor.userId);
   return {};
 }
@@ -210,9 +201,7 @@ export async function updateTaskFieldAction(
   } catch (error) {
     return { error: message(error) };
   }
-  for (const path of boardPath(workspaceId, projectId)) {
-    revalidatePath(path);
-  }
+  revalidatePath(boardPath(workspaceId, projectId));
   publishBoardUpdate(workspaceId, projectId, actor.userId);
   return {};
 }
@@ -229,9 +218,7 @@ export async function deleteTaskAction(
   } catch (error) {
     return { error: message(error) };
   }
-  for (const path of boardPath(workspaceId, projectId)) {
-    revalidatePath(path);
-  }
+  revalidatePath(boardPath(workspaceId, projectId));
   publishBoardUpdate(workspaceId, projectId, actor.userId);
   return {};
 }
@@ -289,9 +276,7 @@ export async function toggleSubtaskDoneAction(
   } catch (error) {
     return { error: message(error) };
   }
-  for (const path of boardPath(workspaceId, projectId)) {
-    revalidatePath(path);
-  }
+  revalidatePath(boardPath(workspaceId, projectId));
   publishBoardUpdate(workspaceId, projectId, actor.userId);
   return {};
 }
@@ -308,9 +293,7 @@ export async function unlinkSubtaskAction(
   } catch (error) {
     return { error: message(error) };
   }
-  for (const path of boardPath(workspaceId, projectId)) {
-    revalidatePath(path);
-  }
+  revalidatePath(boardPath(workspaceId, projectId));
   publishBoardUpdate(workspaceId, projectId, actor.userId);
   return {};
 }

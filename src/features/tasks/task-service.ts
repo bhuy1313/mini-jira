@@ -297,7 +297,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
     }
 
     if (ruleEvaluator) {
-      await ruleEvaluator
+      void ruleEvaluator
         .evaluate({
           type: "TaskCreated",
           projectId,
@@ -389,7 +389,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
             : undefined;
         const updated = await repo.updateTask({ taskId, statusId: newStatusId, activity });
         if (ruleEvaluator && newStatusId !== oldStatusId) {
-          await ruleEvaluator
+          void ruleEvaluator
             .evaluate({
               type: "StatusChanged",
               projectId: task.projectId,
@@ -437,7 +437,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
             : undefined;
         const updated = await repo.updateTask({ taskId, priority: newPriority, activity });
         if (ruleEvaluator && newPriority !== oldPriority) {
-          await ruleEvaluator
+          void ruleEvaluator
             .evaluate({
               type: "PriorityChanged",
               projectId: task.projectId,
@@ -648,7 +648,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
     }
 
     if (ruleEvaluator && isStatusChanged) {
-      await ruleEvaluator
+      void ruleEvaluator
         .evaluate({
           type: "StatusChanged",
           projectId: task.projectId,
