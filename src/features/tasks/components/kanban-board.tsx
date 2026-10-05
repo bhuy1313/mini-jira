@@ -695,7 +695,7 @@ export function KanbanBoard({
     refreshTimerRef.current = setTimeout(() => {
       refreshTimerRef.current = null;
       router.refresh();
-    }, 300);
+    }, 150);
   });
 
   useEffect(() => {

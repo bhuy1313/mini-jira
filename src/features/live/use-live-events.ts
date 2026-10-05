@@ -46,22 +46,27 @@ export function useLiveEvents(
       // EventSource failed or unsupported
     }
 
-    // Fallback polling for Serverless environments (like Vercel) where SSE memory is isolated
+    // Fast polling fallback for Serverless environments (like Vercel) where SSE memory is isolated
     const interval = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
         handlerRef.current({ kind: "board", workspaceId } as unknown as LiveEvent);
       }
-    }, 3000);
+    }, 1500);
 
-    const handleFocus = () => {
-      handlerRef.current({ kind: "board", workspaceId } as unknown as LiveEvent);
+    const handleSync = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        handlerRef.current({ kind: "board", workspaceId } as unknown as LiveEvent);
+      }
     };
-    window.addEventListener("focus", handleFocus);
+
+    window.addEventListener("focus", handleSync);
+    document.addEventListener("visibilitychange", handleSync);
 
     return () => {
       source?.close();
       clearInterval(interval);
-      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("focus", handleSync);
+      document.removeEventListener("visibilitychange", handleSync);
     };
   }, [workspaceId]);
 }
