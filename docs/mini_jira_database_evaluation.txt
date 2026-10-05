@@ -1,0 +1,425 @@
+ĐÁNH GIÁ DATABASE — MINI JIRA
+
+Tổng quan
+---------
+Database hiện tại được đánh giá khoảng 8/10 cho một MVP Mini Jira / Project Management System.
+
+Cấu trúc tổng thể khá sạch và hợp lý:
+
+User
+ ├── WorkspaceMember ── Workspace
+ │                         └── Project
+ │                              └── Task
+ │                                  ├── Comment
+ │                                  └── Activity
+ │
+ ├── Task (creator)
+ ├── Task (assignee)
+ ├── Comment (author)
+ └── Activity (actor)
+
+
+1. NHỮNG ĐIỂM ĐÁNH GIÁ CAO
+--------------------------
+
+1.1. WorkspaceMember là thiết kế tốt
+
+User và Workspace được kết nối thông qua WorkspaceMember:
+
+User ──< WorkspaceMember >── Workspace
+
+WorkspaceMember chứa:
+- userId
+- workspaceId
+- role
+
+Điều này cho phép:
+- Một user tham gia nhiều workspace.
+- Một user có role khác nhau ở các workspace khác nhau.
+- Thể hiện đúng quan hệ many-to-many có thuộc tính.
+
+Constraint:
+UNIQUE(userId, workspaceId)
+
+là cần thiết để đảm bảo một user không bị tạo membership trùng trong cùng workspace.
+
+
+1.2. Creator và Assignee của Task được tách riêng
+
+Task có:
+- creatorId
+- assigneeId
+
+Điều này phản ánh đúng nghiệp vụ:
+
+Người tạo task != Người thực hiện task.
+
+Ví dụ:
+Alice tạo Task #123.
+Bob được assign Task #123.
+
+Đây là thiết kế tốt và dễ giải thích khi phỏng vấn.
+
+
+1.3. Activity Log là một điểm cộng lớn
+
+Activity gồm:
+- type
+- taskId
+- actorId
+- oldValue
+- newValue
+- createdAt
+
+Có thể ghi lại:
+- TaskCreated
+- TitleChanged
+- StatusChanged
+- PriorityChanged
+- AssigneeChanged
+- DueDateChanged
+
+Việc xác định Activity là immutable là hợp lý.
+
+Activity/audit log không nên cho user chỉnh sửa hoặc xóa tùy tiện.
+
+
+1.4. task.position sử dụng Decimal(40,20)
+
+Đây là lựa chọn tốt cho Kanban/fractional ordering.
+
+Ví dụ:
+1
+2
+3
+
+Khi chèn task giữa 1 và 2:
+1
+1.5
+2
+
+Không cần update hàng loạt các task phía sau.
+
+Điều này phù hợp với hệ thống Kanban.
+
+
+2. NHỮNG ĐIỂM NÊN CẢI THIỆN
+---------------------------
+
+2.1. Single Owner chưa được enforce ở database
+
+Hiện tại Owner được xác định thông qua:
+
+workspace_member.role = Owner
+
+Database không trực tiếp đảm bảo mỗi workspace chỉ có đúng một Owner.
+
+Tuy nhiên việc enforce rule này ở service layer là chấp nhận được cho MVP.
+
+Business rule:
+"Đúng một Owner/workspace"
+
+nên được kiểm tra khi:
+- Tạo workspace.
+- Thêm/chuyển role Owner.
+- Xóa hoặc thay đổi Owner.
+
+
+2.2. Assignee chưa được database đảm bảo thuộc cùng Workspace
+
+task.assigneeId chỉ đảm bảo user tồn tại.
+
+Nó không trực tiếp đảm bảo user đó là member của workspace chứa task.
+
+Ví dụ database vẫn có thể xảy ra:
+
+Task thuộc Workspace A
+Assignee thuộc Workspace B
+
+Nếu SRS đã quy định:
+"assignee phải là member cùng workspace"
+
+thì service layer phải validate rule này.
+
+Đây là cách chấp nhận được cho MVP, nhưng cần viết test cho business rule này.
+
+
+2.3. Cần xem lại CASCADE từ User -> Task
+
+Hiện tại:
+
+User -> Task (creator)    CASCADE
+User -> Task (assignee)   CASCADE
+
+Đây là điểm cần cân nhắc.
+
+Ví dụ:
+Alice tạo 500 tasks.
+Nếu Alice bị xóa và FK dùng CASCADE, 500 tasks có thể bị xóa theo.
+
+Sau đó có thể kéo theo:
+Task
+ -> Comment
+ -> Activity
+
+bị xóa.
+
+Đối với hệ thống quản lý công việc, thường không muốn xóa task chỉ vì user bị xóa.
+
+Khuyến nghị:
+
+creatorId:
+RESTRICT hoặc một chiến lược tương đương để bảo vệ task.
+
+assigneeId:
+SET NULL
+
+Như vậy khi user bị xóa:
+- Task vẫn tồn tại.
+- Assignee có thể trở thành NULL.
+- Dữ liệu nghiệp vụ không bị mất hàng loạt.
+
+Đây là thay đổi được ưu tiên cao nhất.
+
+
+2.4. Workspace -> Project CASCADE cần được cân nhắc
+
+Hiện tại:
+
+Workspace
+  -> Project
+      -> Task
+          -> Comment
+          -> Activity
+
+Nếu xóa Workspace bằng CASCADE thì toàn bộ dữ liệu bên dưới có thể bị xóa.
+
+Về mặt kỹ thuật điều này hợp lý, nhưng production system thường không cho phép xóa workspace một cách dễ dàng.
+
+Có thể:
+- Soft delete.
+- Archive.
+- Hoặc yêu cầu confirmation/permission rất cao trước khi permanent delete.
+
+Việc đã có project.archivedAt là một hướng thiết kế tốt.
+
+
+2.5. Comment chưa có soft delete
+
+Comment hiện tại có:
+- content
+- createdAt
+- updatedAt
+
+Nếu delete comment vật lý, lịch sử comment sẽ mất.
+
+Có thể cân nhắc:
+
+deletedAt datetime nullable
+
+để soft delete.
+
+Tuy nhiên đây KHÔNG phải yêu cầu bắt buộc cho MVP.
+
+
+2.6. Activity hiện tại còn giới hạn event
+
+Các event hiện tại:
+
+- TaskCreated
+- TitleChanged
+- StatusChanged
+- PriorityChanged
+- AssigneeChanged
+- DueDateChanged
+
+Đủ tốt cho Mốc 1.
+
+Sau này có thể mở rộng:
+
+- DescriptionChanged
+- CommentAdded
+- CommentDeleted
+- TaskDeleted
+- TaskMoved
+- TaskArchived
+
+Không cần thêm ngay nếu SRS Mốc 1 chưa yêu cầu.
+
+
+2.7. oldValue/newValue dạng string
+
+Activity sử dụng:
+
+oldValue string
+newValue string
+
+Ưu điểm:
+- Đơn giản.
+- Dễ implement.
+- Phù hợp MVP.
+- Có thể lưu nhiều loại thay đổi.
+
+Nhược điểm:
+- Database không enforce được kiểu dữ liệu của value.
+
+Ví dụ:
+StatusChanged:
+oldValue = "Todo"
+newValue = "InProgress"
+
+AssigneeChanged:
+oldValue = "user_123"
+newValue = "user_456"
+
+Đối với project này, nên giữ thiết kế hiện tại thay vì làm phức tạp hóa bằng JSON hoặc nhiều column.
+
+
+3. AUTHENTICATION VÀ BUSINESS DOMAIN
+------------------------------------
+
+Các bảng:
+
+- user
+- session
+- account
+- verification
+
+là authentication tables của Better Auth.
+
+Các bảng:
+
+- workspace
+- workspace_member
+- project
+- task
+- comment
+- activity
+
+là business domain.
+
+Có thể conceptualize thành:
+
+Authentication
+├── User
+├── Session
+├── Account
+└── Verification
+
+Application
+├── Workspace
+├── WorkspaceMember
+├── Project
+├── Task
+├── Comment
+└── Activity
+
+Cách tách này tốt và nên giữ.
+
+
+4. ĐÁNH GIÁ THEO TIÊU CHÍ
+-------------------------
+
+Normalization:
+5/5
+
+Relationships:
+5/5
+
+RBAC foundation:
+5/5
+
+Task modeling:
+5/5
+
+Audit/history:
+5/5
+
+Kanban ordering:
+5/5
+
+MVP simplicity:
+5/5
+
+Data integrity:
+4/5
+
+Delete strategy:
+3/5
+
+Production readiness:
+3.5/5
+
+
+5. KẾT LUẬN
+-----------
+
+Đánh giá tổng thể:
+
+8/10 cho MVP.
+
+Database hiện tại đã đủ tốt để xây dựng:
+
+Authentication
+      ↓
+Workspace
+      ↓
+Members + Roles
+      ↓
+Projects
+      ↓
+Kanban Tasks
+      ↓
+Comments + Activity
+
+Không nên cố nhồi thêm nhiều bảng ngay lúc này.
+
+Nên implement Mốc 1 trước, sau đó dựa trên yêu cầu thực tế để mở rộng.
+
+
+THAY ĐỔI ĐƯỢC ƯU TIÊN CAO NHẤT
+------------------------------
+
+Nếu chỉ sửa một vấn đề, nên xem lại:
+
+User -> Task (creator)    CASCADE
+User -> Task (assignee)   CASCADE
+
+Khuyến nghị:
+
+creatorId -> RESTRICT
+assigneeId -> SET NULL
+
+Lý do:
+
+Xóa account không nên dẫn đến việc xóa dữ liệu công việc.
+
+Các business rule như:
+- Đúng một Owner/workspace.
+- Assignee phải là member cùng workspace.
+
+có thể tiếp tục được enforce ở service layer như thiết kế hiện tại.
+
+
+TÓM TẮT
+-------
+
+Điểm mạnh:
+- Schema rõ ràng.
+- Workspace membership tốt.
+- Role được đặt đúng ở WorkspaceMember.
+- Creator/Assignee tách biệt.
+- Activity log tốt.
+- Fractional ordering tốt.
+- Phù hợp với Mini Jira MVP.
+
+Điểm cần chú ý:
+- Single Owner cần service validation.
+- Assignee cần kiểm tra cùng workspace.
+- Xem lại CASCADE User -> Task.
+- Cân nhắc soft delete cho Comment.
+- Cân nhắc chiến lược archive/delete cho Workspace.
+- Không cần mở rộng Activity quá sớm.
+
+Kết luận cuối:
+Database hiện tại là một nền tảng tốt cho Mini Jira MVP và đủ hợp lý để sử dụng làm project portfolio Software Engineer.

@@ -1,0 +1,521 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                 String             @id
+  name               String
+  email              String
+  emailVerified      Boolean            @default(false)
+  image              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  sessions           Session[]
+  accounts           Account[]
+  memberships        WorkspaceMember[]
+  projectMemberships ProjectMember[]
+  createdTasks       Task[]             @relation("TaskCreator")
+  assignedTasks      Task[]             @relation("TaskAssignee")
+  comments           Comment[]
+  activities         Activity[]
+  attachments        Attachment[]
+  notifications      Notification[]
+  apiKeys            ApiKey[]
+  worklogs           Worklog[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  issuer                String
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([issuer, accountId], map: "account_issuer_accountId_uidx")
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+enum Role {
+  Owner
+  Admin
+  Member
+}
+
+enum Priority {
+  Low
+  Medium
+  High
+  Urgent
+}
+
+enum ActivityType {
+  TaskCreated
+  TitleChanged
+  StatusChanged
+  PriorityChanged
+  AssigneeChanged
+  DueDateChanged
+  SprintChanged
+  EstimateChanged
+  Worklogged
+}
+
+enum NotificationType {
+  TaskAssigned
+  NewComment
+  WorkspaceInvited
+  ProjectArchived
+}
+
+model Workspace {
+  id          String            @id
+  name        String
+  description String?
+  icon        String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  members     WorkspaceMember[]
+  projects    Project[]
+  apiKeys     ApiKey[]
+
+  @@map("workspace")
+}
+
+model WorkspaceMember {
+  id          String    @id
+  role        Role
+  userId      String
+  workspaceId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId], map: "workspace_member_userId_workspaceId_uidx")
+  @@index([workspaceId])
+  @@index([role])
+  @@map("workspace_member")
+}
+
+model Project {
+  id          String   @id
+  name        String
+  description String?
+  archivedAt  DateTime?
+  workspaceId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  statuses    Status[]
+  labels      Label[]
+  members     ProjectMember[]
+  sprints     Sprint[]
+  customFields CustomField[]
+  automationRules AutomationRule[]
+  webhooks        Webhook[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, archivedAt])
+  @@map("project")
+}
+
+model ProjectMember {
+  projectId String
+  userId    String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@index([userId])
+  @@map("project_member")
+}
+
+model Status {
+  id        String   @id
+  projectId String
+  name      String
+  position  Decimal  @db.Decimal(40, 20)
+  isDefault Boolean  @default(false)
+  isDone    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@unique([projectId, name], map: "status_projectId_name_uidx")
+  @@index([projectId, position])
+  @@map("status")
+}
+
+model Sprint {
+  id        String   @id
+  projectId String
+  name      String
+  goal      String?
+  startDate DateTime?
+  endDate   DateTime?
+  position  Decimal  @db.Decimal(40, 20)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@unique([projectId, name], map: "sprint_projectId_name_uidx")
+  @@index([projectId, startDate])
+  @@index([projectId, position])
+  @@map("sprint")
+}
+
+model Task {
+  id          String     @id
+  title       String
+  description String?
+  statusId    String
+  priority    Priority   @default(Medium)
+  dueDate     DateTime?
+  position    Decimal    @db.Decimal(40, 20)
+  projectId   String
+  creatorId   String
+  assigneeId    String?
+  sprintId      String?
+  parentId      String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  search_vector Unsupported("tsvector")?
+  project       Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status        Status     @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  sprint        Sprint?    @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  parent        Task?      @relation("SubTasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subTasks      Task[]     @relation("SubTasks")
+  creator       User       @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  assignee      User?      @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  comments      Comment[]
+  activities    Activity[]
+  attachments   Attachment[]
+  labels        TaskLabel[]
+  customFieldValues TaskCustomFieldValue[]
+  originalEstimateMinutes Int?
+  worklogs      Worklog[]
+
+  @@index([projectId])
+  @@index([projectId, statusId, position])
+  @@index([projectId, statusId])
+  @@index([statusId])
+  @@index([sprintId])
+  @@index([parentId])
+  @@index([priority])
+  @@index([assigneeId])
+  @@index([creatorId])
+  @@index([dueDate])
+  @@map("task")
+}
+
+model Worklog {
+  id               String   @id
+  taskId           String
+  authorId         String
+  timeSpentMinutes Int
+  startedAt        DateTime @default(now())
+  description      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  task             Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author           User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([taskId])
+  @@index([authorId])
+  @@index([taskId, startedAt])
+  @@map("worklog")
+}
+
+model Comment {
+  id        String   @id
+  content   String
+  taskId    String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([taskId])
+  @@map("comment")
+}
+
+model Activity {
+  id        String       @id
+  type      ActivityType
+  taskId    String
+  actorId   String
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime     @default(now())
+  task      Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actor     User         @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([taskId, createdAt])
+  @@index([actorId])
+  @@map("activity")
+}
+
+model Attachment {
+  id         String   @id
+  taskId     String
+  userId     String
+  filename   String
+  mimeType   String
+  size       Int
+  storageKey String
+  createdAt  DateTime @default(now())
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([taskId])
+  @@map("attachment")
+}
+
+model Label {
+  id        String      @id
+  name      String
+  color     String
+  projectId String
+  createdAt DateTime    @default(now())
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     TaskLabel[]
+
+  @@unique([projectId, name], map: "label_projectId_name_uidx")
+  @@index([projectId])
+  @@map("label")
+}
+
+model TaskLabel {
+  taskId  String
+  labelId String
+  task    Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, labelId])
+  @@index([labelId])
+  @@map("task_label")
+}
+
+model Notification {
+  id        String           @id
+  userId    String
+  type      NotificationType
+  payload   Json
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notification")
+}
+
+enum CustomFieldType {
+  Text
+  Number
+  Date
+  Select
+  Checkbox
+}
+
+model CustomField {
+  id          String            @id
+  projectId   String
+  name        String
+  type        CustomFieldType
+  options     Json?
+  required    Boolean           @default(false)
+  position    Decimal           @db.Decimal(40, 20)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  values      TaskCustomFieldValue[]
+
+  @@unique([projectId, name], map: "custom_field_projectId_name_uidx")
+  @@index([projectId, position])
+  @@map("custom_field")
+}
+
+model TaskCustomFieldValue {
+  taskId    String
+  fieldId   String
+  value     Json?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  task      Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  field     CustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, fieldId])
+  @@index([fieldId])
+  @@map("task_custom_field_value")
+}
+
+enum RuleTriggerType {
+  TaskCreated
+  StatusChanged
+  PriorityChanged
+}
+
+enum RuleActionType {
+  ChangeAssignee
+  ChangePriority
+  ChangeStatus
+  AddComment
+}
+
+enum ExecutionStatus {
+  Success
+  Failed
+  Skipped
+}
+
+model AutomationRule {
+  id            String                  @id
+  projectId     String
+  name          String
+  enabled       Boolean                 @default(true)
+  triggerType   RuleTriggerType
+  triggerConfig Json?
+  actionType    RuleActionType
+  actionConfig  Json
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  project       Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  logs          AutomationExecutionLog[]
+
+  @@index([projectId, enabled])
+  @@map("automation_rule")
+}
+
+model AutomationExecutionLog {
+  id        String          @id
+  ruleId    String
+  taskId    String
+  status    ExecutionStatus
+  message   String?
+  createdAt DateTime        @default(now())
+  rule      AutomationRule  @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId, createdAt])
+  @@index([taskId])
+  @@map("automation_execution_log")
+}
+
+model ApiKey {
+  id          String    @id
+  name        String
+  keyHash     String    @unique
+  keyPrefix   String
+  workspaceId String
+  userId      String
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@map("api_key")
+}
+
+enum WebhookFormat {
+  Generic
+  Slack
+  Discord
+}
+
+model Webhook {
+  id          String               @id
+  name        String
+  url         String
+  secret      String?
+  format      WebhookFormat        @default(Generic)
+  events      Json                 // Stored as string array ["task.created", "task.status_changed", ...]
+  enabled     Boolean              @default(true)
+  projectId   String
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  logs        WebhookDeliveryLog[]
+
+  @@index([projectId, enabled])
+  @@map("webhook")
+}
+
+model WebhookDeliveryLog {
+  id           String   @id
+  webhookId    String
+  event        String
+  statusCode   Int?
+  responseBody String?
+  durationMs   Int
+  success      Boolean
+  createdAt    DateTime @default(now())
+  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, createdAt])
+  @@map("webhook_delivery_log")
+}
+
+

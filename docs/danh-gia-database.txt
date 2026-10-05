@@ -1,0 +1,88 @@
+ĐÁNH GIÁ DATABASE SCHEMA - TASK MANAGEMENT APP
+================================================
+
+TỔNG QUAN
+---------
+Schema theo đúng pattern chuẩn của app quản lý task/dự án dạng multi-tenant
+(giống Linear/Asana thu nhỏ), gồm các nhóm: Auth (user, session, account,
+verification), Tổ chức (workspace, workspace_member, project), và Nghiệp vụ
+(task, comment, activity).
+
+
+ĐIỂM MẠNH
+---------
+1. Auth tách biệt rõ ràng: user, session, account, verification đúng chuẩn
+   pattern của Better Auth (hỗ trợ multi-provider qua account, magic
+   link/email verify qua verification). Đây là thiết kế đã được kiểm chứng.
+
+2. Multi-tenancy qua workspace_member: dùng bảng trung gian với "role" thay
+   vì nhét role trực tiếp vào user - đúng cách để 1 user có thể thuộc nhiều
+   workspace với vai trò khác nhau.
+
+3. Task có creator và assignee tách riêng: hợp lý vì người tạo task chưa
+   chắc là người thực hiện.
+
+4. position: Decimal(40,20) - đây là kỹ thuật "fractional indexing" cho
+   drag-and-drop reorder. Chọn kiểu dữ liệu này là dấu hiệu người thiết kế
+   có kinh nghiệm, tránh phải re-index toàn bộ list khi kéo thả.
+
+5. Activity log riêng: tách bạch giữa comment (nội dung do người dùng viết)
+   và activity (audit trail tự động: đổi status, priority...) - thiết kế
+   đúng, dễ mở rộng thành changelog/timeline cho task.
+
+
+VẤN ĐỀ CẦN LƯU Ý
+----------------
+1. Thiếu unique constraint trên workspace_member(userId, workspaceId).
+   Nếu không ràng buộc, một user có thể bị thêm 2 lần vào cùng workspace.
+
+2. status và priority trong task là string thay vì enum thực sự (dù có
+   chú thích Todo|InProgress|Done). Nếu DB không ép enum ở tầng schema
+   (Postgres enum, hoặc check constraint), dễ phát sinh giá trị rác như
+   "todo" vs "Todo". Tương tự với role (workspace_member) và type
+   (activity).
+
+3. Không có soft-delete cho task. Project có archivedAt nhưng task thì
+   không. Nếu cần lưu lịch sử/audit khi xoá task, hoặc undo, nên cân nhắc
+   thêm archivedAt/deletedAt cho task.
+
+4. Không có phân quyền ở cấp project. Hiện tại quyền chỉ dừng ở
+   workspace_member.role, nghĩa là mọi thành viên workspace đều thấy được
+   mọi project trong đó. Nếu cần project riêng tư, sẽ cần thêm bảng
+   project_member.
+
+5. account có cả issuer và providerId - hai field này khá chồng chéo về ý
+   nghĩa (thường chỉ cần providerId là đủ để xác định OAuth provider). Nên
+   kiểm tra lại có thực sự cần cả hai không.
+
+6. Thiếu composite unique trên account(providerId, accountId). Nếu không
+   có, có thể xảy ra tình trạng cùng một tài khoản OAuth được link vào 2
+   user khác nhau.
+
+7. activity.oldValue/newValue là string generic. Với AssigneeChanged thì
+   giá trị thực chất là userId, còn DueDateChanged là datetime. Lưu dạng
+   string chấp nhận được cho audit log đơn giản, nhưng sẽ mất khả năng
+   join ngược để hiển thị tên người dùng thay vì chỉ ID thô (phải tự
+   parse/lookup ở tầng application).
+
+8. Thiếu index rõ ràng (không thể hiện trên ERD nhưng đáng lưu ý). Các cột
+   hay dùng để filter/join như task.projectId, task.assigneeId,
+   task.status, workspace_member.workspaceId nên có index để tránh full
+   scan khi dữ liệu lớn.
+
+
+CÓ THỂ BỔ SUNG NẾU MỞ RỘNG SAU NÀY
+----------------------------------
+- Tags/labels cho task (bảng tag + task_tag many-to-many)
+- Attachment/file đính kèm vào task hoặc comment
+- Notification khi được assign, mention trong comment, task sắp đến hạn
+- Invitation - hiện workspace_member yêu cầu user đã tồn tại; nếu muốn mời
+  người chưa có tài khoản qua email, cần bảng invitation riêng (pending,
+  chưa map vào userId)
+
+
+KẾT LUẬN
+--------
+Đây là một schema vững, đủ dùng cho MVP của một task manager. Các điểm ở
+mục "Vấn đề cần lưu ý" nên được fix sớm (đặc biệt là unique constraints),
+còn mục cuối chỉ cần làm khi thực sự có nhu cầu tính năng đó.
