@@ -593,11 +593,17 @@ export function KanbanBoard({
 
   const [prevTasks, setPrevTasks] = useState(tasks);
   const [prevStatuses, setPrevStatuses] = useState(statuses);
+  const isDraggingRef = useRef(false);
+  const isMutatingRef = useRef(false);
+  const dragStartContainerRef = useRef<string | null>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  if (prevTasks !== tasks || prevStatuses !== statuses) {
-    setPrevTasks(tasks);
-    setPrevStatuses(statuses);
-    setItems(groupByStatus(tasks, statuses));
+  if (!isMutatingRef.current && !isDraggingRef.current) {
+    if (prevTasks !== tasks || prevStatuses !== statuses) {
+      setPrevTasks(tasks);
+      setPrevStatuses(statuses);
+      setItems(groupByStatus(tasks, statuses));
+    }
   }
 
   const allTasksList = useMemo(() => {
@@ -632,9 +638,16 @@ export function KanbanBoard({
       };
     });
 
-    const res = await moveTaskAction(workspaceId, projectId, taskId, targetStatusId);
-    if (res?.error) {
-      router.refresh();
+    isMutatingRef.current = true;
+    try {
+      const res = await moveTaskAction(workspaceId, projectId, taskId, targetStatusId);
+      if (res?.error) {
+        setItems(groupByStatus(tasks, statuses));
+      }
+    } catch {
+      setItems(groupByStatus(tasks, statuses));
+    } finally {
+      isMutatingRef.current = false;
     }
   }
 
@@ -655,16 +668,18 @@ export function KanbanBoard({
       setSelectedTaskId(null);
     }
 
-    const res = await deleteTaskAction(workspaceId, projectId, taskId);
-    if (res?.error) {
-      router.refresh();
+    isMutatingRef.current = true;
+    try {
+      const res = await deleteTaskAction(workspaceId, projectId, taskId);
+      if (res?.error) {
+        setItems(groupByStatus(tasks, statuses));
+      }
+    } catch {
+      setItems(groupByStatus(tasks, statuses));
+    } finally {
+      isMutatingRef.current = false;
     }
   }
-
-  // Real-time (Mốc 14): nhận board event từ server và refresh — nhưng KHÔNG
-  // refresh giữa chừng khi đang drag để không phá thứ tự cục bộ của dnd-kit.
-  const isDraggingRef = useRef(false);
-  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function clearPendingRefresh() {
     if (refreshTimerRef.current !== null) {
@@ -675,7 +690,7 @@ export function KanbanBoard({
 
   useLiveEvents(workspaceId, (event) => {
     if (event.kind !== "board" || (event.projectId && event.projectId !== projectId)) return;
-    if (isDraggingRef.current) return;
+    if (isDraggingRef.current || isMutatingRef.current) return;
     if (refreshTimerRef.current !== null) return;
     refreshTimerRef.current = setTimeout(() => {
       refreshTimerRef.current = null;
@@ -768,55 +783,79 @@ export function KanbanBoard({
   }
 
   async function handleDragEnd(event: DragEndEvent) {
-    isDraggingRef.current = false;
     const { active, over } = event;
-    if (!over) return;
+    const sourceContainer = dragStartContainerRef.current;
+    dragStartContainerRef.current = null;
+    isDraggingRef.current = false;
+
+    if (!over) {
+      if (sourceContainer) {
+        setItems(groupByStatus(tasks, statuses));
+      }
+      return;
+    }
 
     if (String(over.id).startsWith("sprint-target:")) {
       const targetSprint = String(over.id).replace("sprint-target:", "");
       if (targetSprint !== "all") {
         const sprintValue = targetSprint === "backlog" ? "" : targetSprint;
-        await updateTaskFieldAction(
-          workspaceId,
-          projectId,
-          String(active.id),
-          "sprintId",
-          sprintValue,
-        );
-        router.refresh();
+        isMutatingRef.current = true;
+        try {
+          await updateTaskFieldAction(
+            workspaceId,
+            projectId,
+            String(active.id),
+            "sprintId",
+            sprintValue,
+          );
+        } finally {
+          isMutatingRef.current = false;
+          router.refresh();
+        }
       }
       return;
     }
 
-    const activeContainer = findContainer(String(active.id));
-    const overContainer = findContainer(String(over.id));
-    if (!activeContainer || !overContainer) return;
+    const activeTaskId = String(active.id);
+    const targetContainer = findContainer(activeTaskId);
+    if (!targetContainer) return;
 
-    const activeIndex = (items[activeContainer] ?? []).findIndex((t) => t.id === active.id);
-    const overIndex = (items[overContainer] ?? []).findIndex((t) => t.id === over.id);
-    let targetIndex = overIndex >= 0 ? overIndex : (items[overContainer] ?? []).length;
+    const currentList = items[targetContainer] ?? [];
+    let targetIndex = currentList.findIndex((t) => t.id === activeTaskId);
 
-    if (activeContainer === overContainer) {
-      if (activeIndex < 0 || overIndex < 0) return;
-      if (activeIndex === overIndex) return;
-      setItems((prev) => ({
-        ...prev,
-        [overContainer]: arrayMove(prev[overContainer], activeIndex, overIndex),
-      }));
-      targetIndex = overIndex;
-    } else {
-      // Cross-column: item already placed by onDragOver with updated statusId.
-      const current = (items[overContainer] ?? []).findIndex((t) => t.id === active.id);
-      targetIndex = current >= 0 ? current : (items[overContainer] ?? []).length;
+    // If dropped directly onto another task card within the target container, reorder
+    if (over.id !== active.id) {
+      const overIndex = currentList.findIndex((t) => t.id === over.id);
+      if (overIndex >= 0 && targetIndex >= 0 && targetIndex !== overIndex) {
+        setItems((prev) => ({
+          ...prev,
+          [targetContainer]: arrayMove(prev[targetContainer] ?? [], targetIndex, overIndex),
+        }));
+        targetIndex = overIndex;
+      }
     }
 
-    await moveTaskToIndexAction(
-      workspaceId,
-      projectId,
-      String(active.id),
-      overContainer,
-      targetIndex,
-    );
+    if (targetIndex < 0) {
+      targetIndex = currentList.length;
+    }
+
+    isMutatingRef.current = true;
+    try {
+      const res = await moveTaskToIndexAction(
+        workspaceId,
+        projectId,
+        activeTaskId,
+        targetContainer,
+        targetIndex,
+      );
+      if (res?.error) {
+        setItems(groupByStatus(tasks, statuses));
+      }
+    } catch {
+      setItems(groupByStatus(tasks, statuses));
+    } finally {
+      isMutatingRef.current = false;
+    }
   }
 
   const hasActiveFilters = Boolean(
@@ -827,15 +866,18 @@ export function KanbanBoard({
     <DndContext
       id="kanban-board-dnd"
       sensors={sensors}
-      onDragStart={() => {
+      onDragStart={(event) => {
+        dragStartContainerRef.current = findContainer(String(event.active.id));
         isDraggingRef.current = true;
         clearPendingRefresh();
       }}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={() => {
+        dragStartContainerRef.current = null;
         isDraggingRef.current = false;
         clearPendingRefresh();
+        setItems(groupByStatus(tasks, statuses));
       }}
     >
       <div className="space-y-4">
