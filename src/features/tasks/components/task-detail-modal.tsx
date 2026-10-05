@@ -349,6 +349,7 @@ export function TaskDetailModal({
   actorRole,
   actorUserId,
   onClose,
+  onStatusChange,
 }: {
   task: TaskRecord;
   workspaceId: string;
@@ -367,6 +368,7 @@ export function TaskDetailModal({
   actorRole: Role;
   actorUserId: string;
   onClose: () => void;
+  onStatusChange?: (statusId: string) => void;
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"comments" | "activities" | "attachments" | "labels" | "worklogs">("comments");
@@ -407,6 +409,9 @@ export function TaskDetailModal({
 
   const titleRef = useRef<HTMLInputElement>(null);
   async function saveField(field: TaskField, value: string) {
+    if (field === "status" && onStatusChange) {
+      onStatusChange(value);
+    }
     await updateTaskFieldAction(workspaceId, projectId, task.id, field, value);
     router.refresh();
   }

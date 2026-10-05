@@ -100,31 +100,24 @@ function groupByStatus(tasks: TaskRecord[], statuses: StatusRecord[]): Record<st
 
 function StatusMenuMove({
   task,
-  workspaceId,
-  projectId,
   statuses,
+  onMoveStatus,
 }: {
   task: TaskRecord;
-  workspaceId: string;
-  projectId: string;
   statuses: StatusRecord[];
+  onMoveStatus: (taskId: string, statusId: string) => void;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction, pending] = useActionState(
-    async (_prev: { error?: string }, formData: FormData) => {
-      const statusId = String(formData.get("statusId") || "");
-      return moveTaskAction(workspaceId, projectId, task.id, statusId);
-    },
-    {},
-  );
   return (
-    <form ref={formRef} action={formAction} className="flex items-center">
+    <div className="flex items-center">
       <select
-        name="statusId"
-        defaultValue={task.statusId}
+        value={task.statusId}
         aria-label={`Move ${task.title}`}
-        onChange={() => formRef.current?.requestSubmit()}
-        disabled={pending}
+        onChange={(e) => {
+          const newStatusId = e.target.value;
+          if (newStatusId && newStatusId !== task.statusId) {
+            onMoveStatus(task.id, newStatusId);
+          }
+        }}
         className="h-7 cursor-pointer rounded-md border border-rule bg-panel px-2 text-xs text-ink-soft hover:border-rule-strong focus:border-primary focus:outline-none"
       >
         {statuses.map((s) => (
@@ -133,47 +126,34 @@ function StatusMenuMove({
           </option>
         ))}
       </select>
-      {state.error ? (
-        <p role="alert" className="text-xs text-danger">
-          {state.error}
-        </p>
-      ) : null}
-    </form>
+    </div>
   );
 }
 
 function DeleteTaskButton({
   task,
-  workspaceId,
-  projectId,
+  onDelete,
 }: {
   task: TaskRecord;
-  workspaceId: string;
-  projectId: string;
+  onDelete: (taskId: string) => void;
 }) {
-  const [state, formAction, pending] = useActionState(
-    async (_prev: { error?: string }) => deleteTaskAction(workspaceId, projectId, task.id),
-    {},
-  );
   return (
-    <form action={formAction}>
-      <button
-        type="submit"
-        aria-label="Delete task"
-        disabled={pending}
-        className="grid size-7 place-items-center rounded-md text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger disabled:opacity-50"
-        title="Delete task"
-      >
-        <TrashIcon className="size-4" />
-      </button>
-      {state.error ? (
-        <p role="alert" className="text-xs text-danger">
-          {state.error}
-        </p>
-      ) : null}
-    </form>
+    <button
+      type="button"
+      aria-label="Delete task"
+      onClick={() => {
+        if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+          onDelete(task.id);
+        }
+      }}
+      className="grid size-7 place-items-center rounded-md text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger disabled:opacity-50"
+      title="Delete task"
+    >
+      <TrashIcon className="size-4" />
+    </button>
   );
 }
+
 
 function SortableTaskCard({
   task,
@@ -188,6 +168,8 @@ function SortableTaskCard({
   canDelete,
   canEditTitle,
   onOpenDetail,
+  onMoveStatus,
+  onDeleteTask,
 }: {
   task: TaskRecord;
   statuses: StatusRecord[];
@@ -201,6 +183,8 @@ function SortableTaskCard({
   canDelete: boolean;
   canEditTitle: boolean;
   onOpenDetail: () => void;
+  onMoveStatus: (taskId: string, statusId: string) => void;
+  onDeleteTask: (taskId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.id, disabled: !canMove });
@@ -422,15 +406,14 @@ function SortableTaskCard({
           {canMove ? (
             <StatusMenuMove
               task={task}
-              workspaceId={workspaceId}
-              projectId={projectId}
               statuses={statuses}
+              onMoveStatus={onMoveStatus}
             />
           ) : (
             <span className="text-xs text-ink-faint">{currentStatus?.name ?? task.statusName}</span>
           )}
           {canDelete ? (
-            <DeleteTaskButton task={task} workspaceId={workspaceId} projectId={projectId} />
+            <DeleteTaskButton task={task} onDelete={onDeleteTask} />
           ) : (
             <span className="h-7" />
           )}
@@ -456,6 +439,8 @@ function ColumnDroppable({
   actorRole,
   actorUserId,
   onOpenDetail,
+  onMoveStatus,
+  onDeleteTask,
 }: {
   id: string;
   status: StatusRecord;
@@ -470,6 +455,8 @@ function ColumnDroppable({
   actorRole: Role;
   actorUserId: string;
   onOpenDetail: (task: TaskRecord) => void;
+  onMoveStatus: (taskId: string, statusId: string) => void;
+  onDeleteTask: (taskId: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   const canDelete = canDeleteTask(actorRole);
@@ -542,6 +529,8 @@ function ColumnDroppable({
                   canEditTitle={canEditTitle}
                   canDelete={canDelete}
                   onOpenDetail={() => onOpenDetail(t)}
+                  onMoveStatus={onMoveStatus}
+                  onDeleteTask={onDeleteTask}
                 />
               );
             })}
@@ -599,7 +588,6 @@ export function KanbanBoard({
 }) {
   const router = useRouter();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [items, setItems] = useState<Record<string, TaskRecord[]>>(() => groupByStatus(tasks, statuses));
 
@@ -612,10 +600,69 @@ export function KanbanBoard({
     setItems(groupByStatus(tasks, statuses));
   }
 
+  const allTasksList = useMemo(() => {
+    return (statuses ?? []).flatMap((s) => items[s.id] ?? []);
+  }, [statuses, items]);
+
+  const selectedTask = allTasksList.find((t) => t.id === selectedTaskId) ?? null;
+
+  async function handleMoveStatus(taskId: string, targetStatusId: string) {
+    const sourceStatusId = findContainer(taskId);
+    if (!sourceStatusId || sourceStatusId === targetStatusId) return;
+
+    const targetStatus = statuses.find((s) => s.id === targetStatusId);
+
+    // Instant optimistic update (0ms UI transition)
+    setItems((prev) => {
+      const sourceList = [...(prev[sourceStatusId] ?? [])];
+      const targetList = [...(prev[targetStatusId] ?? [])];
+      const idx = sourceList.findIndex((t) => t.id === taskId);
+      if (idx < 0) return prev;
+      const [taskToMove] = sourceList.splice(idx, 1);
+      const updatedTask: TaskRecord = {
+        ...taskToMove,
+        statusId: targetStatusId,
+        statusName: targetStatus?.name ?? taskToMove.statusName,
+      };
+      targetList.push(updatedTask);
+      return {
+        ...prev,
+        [sourceStatusId]: sourceList,
+        [targetStatusId]: targetList,
+      };
+    });
+
+    const res = await moveTaskAction(workspaceId, projectId, taskId, targetStatusId);
+    if (res?.error) {
+      router.refresh();
+    }
+  }
+
+  async function handleDeleteTask(taskId: string) {
+    const containerId = findContainer(taskId);
+    if (!containerId) return;
+
+    // Instant optimistic deletion (0ms UI removal)
+    setItems((prev) => {
+      const list = (prev[containerId] ?? []).filter((t) => t.id !== taskId);
+      return {
+        ...prev,
+        [containerId]: list,
+      };
+    });
+
+    if (selectedTaskId === taskId) {
+      setSelectedTaskId(null);
+    }
+
+    const res = await deleteTaskAction(workspaceId, projectId, taskId);
+    if (res?.error) {
+      router.refresh();
+    }
+  }
+
   // Real-time (Mốc 14): nhận board event từ server và refresh — nhưng KHÔNG
   // refresh giữa chừng khi đang drag để không phá thứ tự cục bộ của dnd-kit.
-  // Dùng ref cho drag state + timer debounce (đọc/ghi ref trong handler, không
-  // đọc ref trong render — tuân thủ react-hooks/refs).
   const isDraggingRef = useRef(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -635,10 +682,6 @@ export function KanbanBoard({
       router.refresh();
     }, 300);
   });
-
-  const allTasksList = useMemo(() => {
-    return (statuses ?? []).flatMap((s) => items[s.id] ?? []);
-  }, [statuses, items]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -708,8 +751,14 @@ export function KanbanBoard({
       const activeIndex = activeItems.findIndex((t) => t.id === active.id);
       if (activeIndex < 0) return prev;
       const [moved] = activeItems.splice(activeIndex, 1);
+      const targetStatus = statuses.find((s) => s.id === overContainer);
+      const updatedMoved: TaskRecord = {
+        ...moved,
+        statusId: overContainer,
+        statusName: targetStatus?.name ?? moved.statusName,
+      };
       const overIndex = overItems.findIndex((t) => t.id === over.id);
-      overItems.splice(overIndex >= 0 ? overIndex : overItems.length, 0, moved);
+      overItems.splice(overIndex >= 0 ? overIndex : overItems.length, 0, updatedMoved);
       return {
         ...prev,
         [activeContainer]: activeItems,
@@ -756,7 +805,7 @@ export function KanbanBoard({
       }));
       targetIndex = overIndex;
     } else {
-      // Cross-column: item already placed by onDragOver.
+      // Cross-column: item already placed by onDragOver with updated statusId.
       const current = (items[overContainer] ?? []).findIndex((t) => t.id === active.id);
       targetIndex = current >= 0 ? current : (items[overContainer] ?? []).length;
     }
@@ -768,7 +817,6 @@ export function KanbanBoard({
       overContainer,
       targetIndex,
     );
-    router.refresh();
   }
 
   const hasActiveFilters = Boolean(
@@ -859,6 +907,8 @@ export function KanbanBoard({
                 actorRole={actorRole}
                 actorUserId={actorUserId}
                 onOpenDetail={(task) => setSelectedTaskId(task.id)}
+                onMoveStatus={handleMoveStatus}
+                onDeleteTask={handleDeleteTask}
               />
             ))}
           </div>
@@ -883,6 +933,7 @@ export function KanbanBoard({
           actorRole={actorRole}
           actorUserId={actorUserId}
           onClose={() => setSelectedTaskId(null)}
+          onStatusChange={(newStatusId) => handleMoveStatus(selectedTask.id, newStatusId)}
         />
       ) : null}
 
