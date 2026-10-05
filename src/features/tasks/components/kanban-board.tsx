@@ -825,6 +825,7 @@ export function KanbanBoard({
 
   return (
     <DndContext
+      id="kanban-board-dnd"
       sensors={sensors}
       onDragStart={() => {
         isDraggingRef.current = true;
