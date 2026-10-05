@@ -61,7 +61,7 @@ export async function createTaskAction(
   workspaceId: string,
   projectId: string,
   formData: FormData,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; task?: TaskRecord }> {
   const actor = await requireProjectActor(workspaceId, projectId);
   const parsed = createSchema.safeParse({
     title: formData.get("title"),
@@ -82,7 +82,7 @@ export async function createTaskAction(
   }
 
   try {
-    await taskService.createTask(actor, projectId, {
+    const created = await taskService.createTask(actor, projectId, {
       title: parsed.data.title,
       description: parsed.data.description ?? null,
       statusId: parsed.data.statusId,
@@ -91,12 +91,12 @@ export async function createTaskAction(
       dueDate: parsed.data.dueDate ?? null,
       originalEstimateMinutes,
     });
+    revalidatePath(boardPath(workspaceId, projectId));
+    publishBoardUpdate(workspaceId, projectId, actor.userId);
+    return { task: created };
   } catch (error) {
     return { error: message(error) };
   }
-  revalidatePath(boardPath(workspaceId, projectId));
-  publishBoardUpdate(workspaceId, projectId, actor.userId);
-  return {};
 }
 
 /** Move a task to the end of a target column — auth per status (FR-045, FR-051). */

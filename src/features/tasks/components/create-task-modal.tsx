@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/inputs";
 import { CloseIcon, PlusIcon } from "@/components/ui/icons";
@@ -10,40 +10,29 @@ import { Spinner } from "@/components/ui/spinner";
 import type { Role } from "@/features/authorization/permissions";
 import { canAssignTask, PRIORITIES } from "@/features/authorization/permissions";
 import type { StatusRecord } from "@/features/statuses/status-service";
-import { createTaskAction } from "@/features/tasks/actions";
 import { PRIORITY_LABEL } from "@/features/tasks/task-meta";
 import type { MemberWithUser } from "@/features/workspaces/workspace-service";
+
+type CreateTaskResult = { error?: string };
 
 export function CreateTaskModal({
   open,
   onClose,
-  workspaceId,
-  projectId,
   statuses = [],
   members = [],
   actorRole,
+  onCreateTask,
 }: {
   open: boolean;
   onClose: () => void;
-  workspaceId: string;
-  projectId: string;
   statuses?: StatusRecord[];
   members: MemberWithUser[];
   actorRole: Role;
+  onCreateTask: (formData: FormData) => Promise<CreateTaskResult>;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
-
-  const [state, formAction, pending] = useActionState(
-    async (_prev: { error?: string }, formData: FormData) => {
-      const res = await createTaskAction(workspaceId, projectId, formData);
-      if (!res?.error) {
-        onClose();
-      }
-      return res;
-    },
-    {},
-  );
+  const [pending, setPending] = useState(false);
 
   const canAssign = canAssignTask(actorRole);
 
@@ -63,6 +52,20 @@ export function CreateTaskModal({
       formRef.current?.requestSubmit();
     }
   };
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    if (!form.reportValidity()) return;
+
+    const formData = new FormData(form);
+    setPending(true);
+    onClose();
+    form.reset();
+
+    await onCreateTask(formData);
+    setPending(false);
+  }
 
   return (
     <Modal
@@ -92,7 +95,7 @@ export function CreateTaskModal({
 
       <form
         ref={formRef}
-        action={formAction}
+        onSubmit={handleSubmit}
         onKeyDown={handleKeyDown}
         className="flex flex-col gap-4 p-5"
       >
@@ -224,12 +227,6 @@ export function CreateTaskModal({
             />
           </div>
         </div>
-
-        {state.error ? (
-          <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-xs text-danger">
-            {state.error}
-          </p>
-        ) : null}
 
         {/* Modal Footer */}
         <div className="mt-2 flex items-center justify-between border-t border-rule pt-4">

@@ -52,6 +52,7 @@ import type { StatusRecord } from "@/features/statuses/status-service";
 import type { SprintRecord } from "@/features/sprints/sprint-service";
 import { SprintSwitcher } from "@/features/sprints/components/sprint-switcher";
 import {
+  createTaskAction,
   deleteTaskAction,
   moveTaskAction,
   moveTaskToIndexAction,
@@ -209,6 +210,7 @@ function SortableTaskCard({
   return (
     <li
       ref={setNodeRef}
+      data-task-id={task.id}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
@@ -589,6 +591,7 @@ export function KanbanBoard({
   const router = useRouter();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [boardError, setBoardError] = useState<string | null>(null);
   const [items, setItems] = useState<Record<string, TaskRecord[]>>(() => groupByStatus(tasks, statuses));
 
   const [prevTasks, setPrevTasks] = useState(tasks);
@@ -611,6 +614,86 @@ export function KanbanBoard({
   }, [statuses, items]);
 
   const selectedTask = allTasksList.find((t) => t.id === selectedTaskId) ?? null;
+
+  async function handleCreateTask(formData: FormData): Promise<{ error?: string }> {
+    const title = String(formData.get("title") ?? "").trim();
+    if (!title) return { error: "Title is required." };
+
+    const requestedStatusId = String(formData.get("statusId") ?? "");
+    const fallbackStatus = statuses.find((s) => s.isDefault) ?? statuses[0];
+    const status = statuses.find((s) => s.id === requestedStatusId) ?? fallbackStatus;
+    if (!status) return { error: "Status is required." };
+
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const dueDateValue = String(formData.get("dueDate") ?? "");
+    const assigneeId = String(formData.get("assigneeId") ?? "") || null;
+    const priority = String(formData.get("priority") || "Medium") as TaskRecord["priority"];
+    const currentList = items[status.id] ?? [];
+    const lastPosition = currentList.at(-1)?.position ?? 0;
+    const optimisticTask: TaskRecord = {
+      id: tempId,
+      projectId,
+      workspaceId,
+      creatorId: actorUserId,
+      assigneeId,
+      title,
+      description: String(formData.get("description") ?? "").trim() || null,
+      statusId: status.id,
+      statusName: status.name,
+      sprintId: activeSprintId ?? null,
+      priority,
+      dueDate: dueDateValue ? new Date(dueDateValue) : null,
+      position: lastPosition + 1,
+      parentId: null,
+      subtaskCount: 0,
+      subtaskDoneCount: 0,
+      subtasks: [],
+      originalEstimateMinutes: null,
+    };
+
+    setBoardError(null);
+    setItems((prev) => ({
+      ...prev,
+      [status.id]: [...(prev[status.id] ?? []), optimisticTask],
+    }));
+
+    isMutatingRef.current = true;
+    try {
+      const res = await createTaskAction(workspaceId, projectId, formData);
+      if (res?.error || !res?.task) {
+        setItems((prev) => ({
+          ...prev,
+          [status.id]: (prev[status.id] ?? []).filter((t) => t.id !== tempId),
+        }));
+        const error = res?.error ?? "Task could not be created.";
+        setBoardError(error);
+        return { error };
+      }
+
+      const createdTask = res.task;
+      setItems((prev) => {
+        const next: Record<string, TaskRecord[]> = {};
+        for (const [key, list] of Object.entries(prev)) {
+          next[key] = list.filter((t) => t.id !== tempId);
+        }
+        next[createdTask.statusId] = [...(next[createdTask.statusId] ?? []), createdTask].sort(
+          (left, right) => left.position - right.position,
+        );
+        return next;
+      });
+      return {};
+    } catch {
+      setItems((prev) => ({
+        ...prev,
+        [status.id]: (prev[status.id] ?? []).filter((t) => t.id !== tempId),
+      }));
+      const error = "Task could not be created.";
+      setBoardError(error);
+      return { error };
+    } finally {
+      isMutatingRef.current = false;
+    }
+  }
 
   async function handleMoveStatus(taskId: string, targetStatusId: string) {
     const sourceStatusId = findContainer(taskId);
@@ -654,6 +737,7 @@ export function KanbanBoard({
   async function handleDeleteTask(taskId: string) {
     const containerId = findContainer(taskId);
     if (!containerId) return;
+    setBoardError(null);
 
     // Instant optimistic deletion (0ms UI removal)
     setItems((prev) => {
@@ -673,9 +757,16 @@ export function KanbanBoard({
       const res = await deleteTaskAction(workspaceId, projectId, taskId);
       if (res?.error) {
         setItems(groupByStatus(tasks, statuses));
+        setBoardError(res.error);
+      } else {
+        setItems((prev) => ({
+          ...prev,
+          [containerId]: (prev[containerId] ?? []).filter((task) => task.id !== taskId),
+        }));
       }
     } catch {
       setItems(groupByStatus(tasks, statuses));
+      setBoardError("Task could not be deleted.");
     } finally {
       isMutatingRef.current = false;
     }
@@ -692,10 +783,16 @@ export function KanbanBoard({
     if (event.kind !== "board" || (event.projectId && event.projectId !== projectId)) return;
     if (isDraggingRef.current || isMutatingRef.current) return;
     if (refreshTimerRef.current !== null) return;
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(
+        "mini-jira:last-board-event",
+        JSON.stringify({ projectId: event.projectId ?? null, ts: Date.now() }),
+      );
+    }
     refreshTimerRef.current = setTimeout(() => {
       refreshTimerRef.current = null;
       router.refresh();
-    }, 150);
+    }, 50);
   });
 
   useEffect(() => {
@@ -920,6 +1017,12 @@ export function KanbanBoard({
           </div>
         </div>
 
+        {boardError ? (
+          <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-xs text-danger">
+            {boardError}
+          </p>
+        ) : null}
+
         {tasks.length === 0 && hasActiveFilters ? (
           <div className="rounded-md border border-dashed border-rule-strong bg-panel/60 px-6 py-10 text-center">
             <p className="text-sm font-medium text-ink">No tasks match your filters.</p>
@@ -983,11 +1086,10 @@ export function KanbanBoard({
         <CreateTaskModal
           open={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
-          workspaceId={workspaceId}
-          projectId={projectId}
           statuses={statuses}
           members={members}
           actorRole={actorRole}
+          onCreateTask={handleCreateTask}
         />
       </div>
     </DndContext>

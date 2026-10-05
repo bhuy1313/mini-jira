@@ -8,7 +8,7 @@ import { NotificationBell } from "@/features/notifications/components/notificati
 import { getNotificationData } from "@/features/notifications/queries";
 import { WorkspaceNav } from "@/features/workspaces/components/workspace-nav";
 import { WorkspaceSwitcher } from "@/features/workspaces/components/workspace-switcher";
-import { getWorkspaceContext, getWorkspaceMembers, getUserWorkspaces } from "@/features/workspaces/queries";
+import { getWorkspaceContext, getUserWorkspaces } from "@/features/workspaces/queries";
 import { getSessionUser } from "@/features/workspaces/session";
 
 export const dynamic = "force-dynamic";
@@ -29,9 +29,6 @@ export default async function WorkspaceLayout({
   ]);
   const { ws, actor } = ctx;
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : actor.userId.charAt(0).toUpperCase();
-
-  // Fetch members on-demand (not on initial render)
-  const members = await getWorkspaceMembers(workspaceId);
 
   return (
     <div className="min-h-screen bg-paper text-ink">
