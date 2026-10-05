@@ -6,15 +6,38 @@ import { nextCookies } from "better-auth/next-js";
 import { hasValidPassword, PASSWORD_POLICY_MESSAGE } from "@/features/auth/password-policy";
 import { prisma } from "@/lib/prisma";
 
+function getBaseUrl(): string {
+  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
+}
+
+function getTrustedOrigins(): string[] {
+  if (process.env.BETTER_AUTH_TRUSTED_ORIGINS) {
+    return process.env.BETTER_AUTH_TRUSTED_ORIGINS.split(",").map((s) => s.trim());
+  }
+  const origins = [getBaseUrl(), "http://localhost:3000"];
+  if (process.env.VERCEL_URL) {
+    origins.push(`https://${process.env.VERCEL_URL}`);
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    origins.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+  }
+  return Array.from(new Set(origins));
+}
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: getBaseUrl(),
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: process.env.BETTER_AUTH_TRUSTED_ORIGINS
-    ? process.env.BETTER_AUTH_TRUSTED_ORIGINS.split(",").map((s) => s.trim())
-    : [process.env.BETTER_AUTH_URL || "http://localhost:3000"],
+  trustedOrigins: getTrustedOrigins(),
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
