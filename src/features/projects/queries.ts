@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { prisma } from "@/lib/prisma";
 import type { Actor } from "@/features/authorization/actor";
@@ -19,8 +20,8 @@ export interface WorkspaceProjectLists {
   archived: ProjectRecord[];
 }
 
-/** Active + archived project lists cho workspace; redirect /workspaces nếu không phải member. */
-export async function getWorkspaceProjectLists(workspaceId: string): Promise<WorkspaceProjectLists> {
+/** Active + archived project lists cho workspace; redirect /workspaces nếu không phải member. Memoized per request. */
+export const getWorkspaceProjectLists = cache(async (workspaceId: string): Promise<WorkspaceProjectLists> => {
   const actor = await requireActor(workspaceId).catch(() => null);
   if (!actor) redirect("/workspaces");
   const [active, archived] = await Promise.all([
@@ -28,19 +29,19 @@ export async function getWorkspaceProjectLists(workspaceId: string): Promise<Wor
     projectService.listArchivedProjects(actor),
   ]);
   return { actor, active, archived };
-}
+});
 
-/** Chi tiết project; redirect về danh sách nếu không có quyền hoặc không tồn tại. */
-export async function getProjectDetail(
+/** Chi tiết project; redirect về danh sách nếu không có quyền hoặc không tồn tại. Memoized per request. */
+export const getProjectDetail = cache(async (
   workspaceId: string,
   projectId: string,
-): Promise<{ actor: ProjectActor; project: ProjectRecord }> {
+): Promise<{ actor: ProjectActor; project: ProjectRecord }> => {
   const actor = await requireProjectActor(workspaceId, projectId).catch(() => null);
   if (!actor) redirect("/workspaces");
   const project = await projectService.getProject(actor, projectId).catch(() => null);
   if (!project) redirect(`/workspaces/${workspaceId}/projects`);
   return { actor, project };
-}
+});
 
 import { prismaStatusRepository } from "@/features/statuses/prisma-status-repository";
 import type { StatusRecord } from "@/features/statuses/status-service";
@@ -56,8 +57,8 @@ import type {
 import { prismaWebhookRepository } from "@/features/webhooks/prisma-webhook-repository";
 import type { WebhookDeliveryLogRecord, WebhookRecord } from "@/features/webhooks/webhook-types";
 
-/** Dữ liệu cho trang project settings: actor (ProjectActor), project, danh sách member kèm user info, danh sách statuses, sprints, custom fields, automation rules, logs. */
-export async function getProjectSettingsData(
+/** Dữ liệu cho trang project settings: actor (ProjectActor), project, danh sách member kèm user info, danh sách statuses, sprints, custom fields, automation rules, logs. Memoized per request. */
+export const getProjectSettingsData = cache(async (
   workspaceId: string,
   projectId: string,
 ): Promise<{
@@ -71,7 +72,7 @@ export async function getProjectSettingsData(
   automationLogs: AutomationExecutionLogRecord[];
   webhooks: WebhookRecord[];
   webhookLogs: WebhookDeliveryLogRecord[];
-}> {
+}> => {
   const actor = await requireProjectActor(workspaceId, projectId).catch(() => null);
   if (!actor) redirect("/workspaces");
 
@@ -117,6 +118,4 @@ export async function getProjectSettingsData(
     webhooks,
     webhookLogs,
   };
-}
-
-
+});

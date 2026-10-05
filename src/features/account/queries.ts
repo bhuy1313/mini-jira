@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { AccountService, type AccountOverview } from "@/features/account/account-service";
 import { PrismaAccountRepository } from "@/features/account/prisma-account-repository";
@@ -9,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 const accountRepository = new PrismaAccountRepository(prisma);
 const accountService = new AccountService(accountRepository);
 
-export async function getAccountData(): Promise<AccountOverview> {
+export const getAccountData = cache(async (): Promise<AccountOverview> => {
   const reqHeaders = await headers();
   const session = await auth.api.getSession({ headers: reqHeaders });
 
@@ -18,4 +19,4 @@ export async function getAccountData(): Promise<AccountOverview> {
   }
 
   return accountService.getAccountOverview(session.user.id, session.session?.token);
-}
+});

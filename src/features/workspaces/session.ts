@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -11,18 +12,19 @@ import {
   type ProjectActor,
 } from "@/features/authorization/actor";
 
-/** Lấy user từ session; trả null nếu chưa đăng nhập. */
-export async function getSessionUser() {
+/** Lấy user từ session; trả null nếu chưa đăng nhập. Memoized per request qua React.cache. */
+export const getSessionUser = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   return session?.user ?? null;
-}
+});
 
 /**
  * Lấy Actor (currentUserId + workspaceId + role) cho một workspace từ session.
+ * Memoized per request qua React.cache.
  * - Chưa đăng nhập → redirect /auth.
  * - Không phải member của workspace → ném UnauthorizedError (không làm lộ dữ liệu).
  */
-export async function requireActor(workspaceId: string): Promise<Actor> {
+export const requireActor = cache(async (workspaceId: string): Promise<Actor> => {
   const user = await getSessionUser();
   if (!user) redirect("/auth");
 
@@ -37,18 +39,19 @@ export async function requireActor(workspaceId: string): Promise<Actor> {
     workspaceId: membership.workspaceId,
     role: membership.role,
   });
-}
+});
 
 /**
  * Lấy ProjectActor cho (workspaceId, projectId) từ session (Mốc 11).
+ * Memoized per request qua React.cache.
  * - Chưa đăng nhập → redirect /auth.
  * - Không phải workspace member → ném UnauthorizedError.
  * - Chưa có project membership row → projectRole = workspace role (backward-compat).
  */
-export async function requireProjectActor(
+export const requireProjectActor = cache(async (
   workspaceId: string,
   projectId: string,
-): Promise<ProjectActor> {
+): Promise<ProjectActor> => {
   const user = await getSessionUser();
   if (!user) redirect("/auth");
 
@@ -84,4 +87,4 @@ export async function requireProjectActor(
     projectId,
     projectMembership?.role ?? null,
   );
-}
+});

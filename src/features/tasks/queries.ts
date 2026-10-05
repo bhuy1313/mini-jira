@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import type { Actor } from "@/features/authorization/actor";
 import type { ProjectActor } from "@/features/authorization/actor";
@@ -58,13 +59,12 @@ export interface ProjectBoardData {
   activeFilters: TaskFilterInput;
 }
 
-
-/** Board dữ liệu cho Kanban; redirect nếu không thuộc workspace hoặc project không tồn tại. */
-export async function getProjectBoard(
+/** Board dữ liệu cho Kanban; redirect nếu không thuộc workspace hoặc project không tồn tại. Memoized per request. */
+export const getProjectBoard = cache(async (
   workspaceId: string,
   projectId: string,
   filter?: TaskFilterInput,
-): Promise<ProjectBoardData> {
+): Promise<ProjectBoardData> => {
   const actor = await requireProjectActor(workspaceId, projectId).catch(() => null);
   if (!actor) redirect("/workspaces");
 
@@ -148,17 +148,16 @@ export async function getProjectBoard(
     worklogsByTask,
     activeFilters: filter ?? {},
   };
-}
+});
 
-
-/** Tìm kiếm task toàn workspace qua active projects (FR-080..FR-085). */
-export async function searchWorkspaceTasks(
+/** Tìm kiếm task toàn workspace qua active projects (FR-080..FR-085). Memoized per request. */
+export const searchWorkspaceTasks = cache(async (
   workspaceId: string,
   filter: TaskFilterInput,
-): Promise<{ actor: Actor; tasks: TaskRecord[] }> {
+): Promise<{ actor: Actor; tasks: TaskRecord[] }> => {
   const actor = await requireActor(workspaceId).catch(() => null);
   if (!actor) redirect("/workspaces");
 
   const tasks = await taskService.searchWorkspaceTasks(actor, filter);
   return { actor, tasks };
-}
+});

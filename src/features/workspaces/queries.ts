@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { prisma } from "@/lib/prisma";
 import { createWorkspaceService } from "@/features/workspaces/workspace-service";
@@ -8,15 +9,15 @@ import type { Actor } from "@/features/authorization/actor";
 
 const workspaceService = createWorkspaceService({ repo: prismaWorkspaceRepository });
 
-/** Danh sách workspace của user hiện tại; redirect /auth nếu chưa đăng nhập. */
-export async function getUserWorkspaces() {
+/** Danh sách workspace của user hiện tại; redirect /auth nếu chưa đăng nhập. Memoized per request. */
+export const getUserWorkspaces = cache(async () => {
   const user = await getSessionUser();
   if (!user) redirect("/auth");
   return workspaceService.listWorkspacesForUser({ userId: user.id });
-}
+});
 
-/** Workspace hiện tại + actor + thông tin hiển thị; nếu không phải member → redirect /workspaces. */
-export async function getWorkspaceContext(workspaceId: string) {
+/** Workspace hiện tại + actor + thông tin hiển thị; nếu không phải member → redirect /workspaces. Memoized per request. */
+export const getWorkspaceContext = cache(async (workspaceId: string) => {
   const actor = await requireActor(workspaceId).catch(() => null);
   if (!actor) redirect("/workspaces");
   const [ws, members] = await Promise.all([
@@ -24,20 +25,20 @@ export async function getWorkspaceContext(workspaceId: string) {
     workspaceService.listMembers(actor),
   ]);
   return { actor, ws, members };
-}
+});
 
 export type WorkspacePageData = Awaited<ReturnType<typeof getWorkspaceContext>>;
 
-/** Chỉ workspace settings thật sự cần; cache query nếu cần sau này. */
-export async function getWorkspaceSettings(workspaceId: string): Promise<{ actor: Actor; ws: NonNullable<Awaited<ReturnType<typeof getWorkspaceContext>>["ws"]> }> {
+/** Chỉ workspace settings thật sự cần; cache query nếu cần sau này. Memoized per request. */
+export const getWorkspaceSettings = cache(async (workspaceId: string): Promise<{ actor: Actor; ws: NonNullable<Awaited<ReturnType<typeof getWorkspaceContext>>["ws"]> }> => {
   const actor = await requireActor(workspaceId).catch(() => null);
   if (!actor) redirect("/workspaces");
   const ws = await workspaceService.getWorkspace(actor);
   return { actor, ws };
-}
+});
 
-/** Hỗ trợ _count cho UI nếu cần render số project/member. */
-export async function getWorkspaceCounts(workspaceId: string) {
+/** Hỗ trợ _count cho UI nếu cần render số project/member. Memoized per request. */
+export const getWorkspaceCounts = cache(async (workspaceId: string) => {
   const actor = await requireActor(workspaceId).catch(() => null);
   if (!actor) redirect("/workspaces");
   const agg = await prisma.workspace.findUnique({
@@ -45,4 +46,4 @@ export async function getWorkspaceCounts(workspaceId: string) {
     select: { _count: { select: { members: true, projects: true } } },
   });
   return { count: agg?._count ?? { members: 0, projects: 0 } };
-}
+});
