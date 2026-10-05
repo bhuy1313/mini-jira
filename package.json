@@ -13,7 +13,9 @@
     "test:a11y": "playwright test e2e/a11y.spec.ts",
     "test:ux": "playwright test e2e/command-palette.spec.ts",
     "test:visual": "playwright test e2e/visual-regression.spec.ts --project=chromium --update-snapshots",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:use-local": "node -e \"require('fs').copyFileSync('.env.local-db', '.env')\" && echo Switched to Local Database",
+    "db:use-neon": "node -e \"require('fs').copyFileSync('.env.neon-db', '.env')\" && echo Switched to Neon Database"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
