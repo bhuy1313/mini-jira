@@ -1,10 +1,7 @@
-"use client";
-
-import { usePathname } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 
 import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
+import { NavigationLoadingIndicator } from "@/components/navigation-loading-indicator";
 import { ThemeQuickToggle } from "@/components/theme/theme-toggle";
 import { ChevronRightIcon } from "@/components/ui/icons";
 import { LogoutButton } from "@/features/auth/components/logout-button";
@@ -25,19 +22,6 @@ export default async function WorkspaceLayout({
   params: Promise<{ workspaceId: string }>;
 }) {
   const { workspaceId } = await params;
-  const pathname = usePathname();
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  useEffect(() => {
-    const prev = useRef(pathname);
-    if (pathname !== prev.current) {
-      setIsNavigating(true);
-      prev.current = pathname;
-      const timer = setTimeout(() => setIsNavigating(false), 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [pathname]);
-
   const [ctx, notificationData, user, workspaces] = await Promise.all([
     getWorkspaceContext(workspaceId),
     getNotificationData(),
@@ -170,24 +154,7 @@ export default async function WorkspaceLayout({
         </div>
       </div>
       <CommandPalette workspaceId={workspaceId} />
-
-      {/* Loading banner — hiển thị khi navigate giữa các trang workspace */}
-      {isNavigating && (
-        <div className="fixed bottom-4 right-4 bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm animate-fade-in flex items-center gap-2">
-          <svg className="size-4 animate-spin" viewBox="0 0 24 24">
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="3"
-              fill="none"
-            />
-          </svg>
-          <span>Đang tải dữ liệu workspace...</span>
-        </div>
-      )}
-
+      <NavigationLoadingIndicator />
     </div>
   );
 }
