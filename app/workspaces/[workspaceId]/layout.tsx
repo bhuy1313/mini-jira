@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
-import { NavigationLoadingIndicator } from "@/components/navigation-loading-indicator";
 import { ThemeQuickToggle } from "@/components/theme/theme-toggle";
 import { ChevronRightIcon } from "@/components/ui/icons";
 import { LogoutButton } from "@/features/auth/components/logout-button";
@@ -154,7 +153,6 @@ export default async function WorkspaceLayout({
         </div>
       </div>
       <CommandPalette workspaceId={workspaceId} />
-      <NavigationLoadingIndicator />
     </div>
   );
 }

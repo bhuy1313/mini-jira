@@ -30,6 +30,9 @@ test.describe("UI/UX Accessibility (a11y) Audits with Playwright", () => {
     await projDialog.getByLabel("Project name").fill("A11y Project");
     await projDialog.getByRole("button", { name: "Create project" }).click();
     await page.waitForURL(/\/projects\/[^/]+$/);
+    // Next.js clears document.title briefly while the loading shell commits;
+    // wait for it to settle so the axe document-title rule sees the real head.
+    await page.waitForFunction(() => document.title !== "");
 
     // Run Axe scan on Kanban board
     const boardScanResults = await new AxeBuilder({ page })

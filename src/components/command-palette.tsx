@@ -15,6 +15,7 @@ import {
   LaptopIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
+import { startNavigation } from "@/lib/navigation-pending";
 
 interface CommandItem {
   id: string;
@@ -53,7 +54,10 @@ export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
         title: "Go to Workspaces Overview",
         category: "Navigation",
         icon: <BoardsIcon className="size-4 text-primary" />,
-        perform: () => router.push("/workspaces"),
+        perform: () => {
+          startNavigation();
+          router.push("/workspaces");
+        },
         shortcut: "G W",
       },
       {
@@ -61,7 +65,10 @@ export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
         title: "Go to Account Settings",
         category: "Navigation",
         icon: <SettingsIcon className="size-4 text-ink-soft" />,
-        perform: () => router.push("/account"),
+        perform: () => {
+          startNavigation();
+          router.push("/account");
+        },
         shortcut: "G A",
       },
     ];
@@ -73,7 +80,10 @@ export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
           title: "Go to Projects",
           category: "Navigation",
           icon: <BoardsIcon className="size-4 text-primary" />,
-          perform: () => router.push(`/workspaces/${workspaceId}/projects`),
+          perform: () => {
+            startNavigation();
+            router.push(`/workspaces/${workspaceId}/projects`);
+          },
           shortcut: "G P",
         },
         {
@@ -81,7 +91,10 @@ export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
           title: "Go to Workspace Members",
           category: "Navigation",
           icon: <UsersIcon className="size-4 text-primary" />,
-          perform: () => router.push(`/workspaces/${workspaceId}/members`),
+          perform: () => {
+            startNavigation();
+            router.push(`/workspaces/${workspaceId}/members`);
+          },
           shortcut: "G M",
         },
         {
@@ -89,7 +102,10 @@ export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
           title: "Go to Analytics & Velocity",
           category: "Navigation",
           icon: <BarChartIcon className="size-4 text-primary" />,
-          perform: () => router.push(`/workspaces/${workspaceId}/analytics`),
+          perform: () => {
+            startNavigation();
+            router.push(`/workspaces/${workspaceId}/analytics`);
+          },
           shortcut: "G V",
         },
         {
@@ -97,7 +113,10 @@ export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
           title: "Go to Workspace Settings",
           category: "Navigation",
           icon: <SettingsIcon className="size-4 text-ink-soft" />,
-          perform: () => router.push(`/workspaces/${workspaceId}/settings`),
+          perform: () => {
+            startNavigation();
+            router.push(`/workspaces/${workspaceId}/settings`);
+          },
           shortcut: "G S",
         },
       );

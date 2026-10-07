@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { BellIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
+import { startNavigation } from "@/lib/navigation-pending";
 import { useLiveEvents } from "@/features/live/use-live-events";
 import {
   markAllNotificationsReadAction,
@@ -101,6 +102,7 @@ export function NotificationBell({
       await markNotificationReadAction(n.id);
     }
     setIsOpen(false);
+    startNavigation();
     router.push(notificationHref(n));
   }
 
