@@ -2,11 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
-
 import { Button } from "@/components/ui/button";
 import { CheckIcon, CloseIcon, TrashIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
+import { withActionRetry } from "@/lib/action-retry";
+import { withMutation } from "@/lib/mutation-busy";
 import {
   createLabelAction,
   deleteLabelAction,
@@ -72,7 +73,9 @@ function LabelRow({
   const [editColor, setEditColor] = useState(label.color);
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
-      const res = await updateLabelAction(workspaceId, projectId, label.id, formData);
+      const res = await withActionRetry(() =>
+        updateLabelAction(workspaceId, projectId, label.id, formData),
+      );
       if (!res?.error) {
         setEditing(false);
         router.refresh();
@@ -84,7 +87,10 @@ function LabelRow({
   const [deleteState, deleteAction, deletePending] = useActionState(
     async (_prev: { error?: string }) => {
       onDeleted?.(label.id);
-      const res = await deleteLabelAction(workspaceId, projectId, label.id);
+      // Label deletes are non-idempotent: gate refreshes, never retry.
+      const res = await withMutation(() =>
+        deleteLabelAction(workspaceId, projectId, label.id),
+      );
       router.refresh();
       return res;
     },
@@ -215,7 +221,10 @@ export function ManageLabelsModal({
           },
         ]);
       }
-      const res = await createLabelAction(workspaceId, projectId, formData);
+      // Label creates are non-idempotent: gate refreshes, never retry.
+      const res = await withMutation(() =>
+        createLabelAction(workspaceId, projectId, formData),
+      );
       if (!res?.error) {
         setName("");
         router.refresh();

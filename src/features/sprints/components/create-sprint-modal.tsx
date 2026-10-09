@@ -7,6 +7,7 @@ import { CalendarIcon, CloseIcon, PlusIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { Spinner } from "@/components/ui/spinner";
 import { createSprintAction } from "@/features/sprints/actions";
+import { withMutation } from "@/lib/mutation-busy";
 
 export function CreateSprintModal({
   open,
@@ -22,7 +23,10 @@ export function CreateSprintModal({
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
-      const res = await createSprintAction(workspaceId, projectId, formData);
+      // Sprint creates are non-idempotent: gate refreshes, never retry.
+      const res = await withMutation(() =>
+        createSprintAction(workspaceId, projectId, formData),
+      );
       if (!res?.error) {
         onClose();
       }

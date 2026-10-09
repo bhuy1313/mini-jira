@@ -38,7 +38,9 @@ export function WorkspaceApiKeysPanel({
   function handleKeyGenerated(keyName: string, secretKey: string) {
     setCreatedKeyName(keyName);
     setNewSecretKey(secretKey);
-    toast.success(`API key "${keyName}" created`);
+    // NOTE: toast text intentionally omits the key name — the table row
+    // already shows it and E2E asserts its uniqueness.
+    toast.success("API key created — copy the secret now");
   }
 
   function handleDelete(keyId: string) {

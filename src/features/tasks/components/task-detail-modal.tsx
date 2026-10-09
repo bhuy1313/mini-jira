@@ -12,6 +12,7 @@ import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
 import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
+import { withActionRetry } from "@/lib/action-retry";
 import { formatDate } from "@/lib/dates";
 
 import type { ActivityRecord } from "@/features/activities/activity-service";
@@ -129,7 +130,14 @@ function TaskLabelPicker({
     }
     // Await the real id when toggling right after task creation.
     const realTaskId = await resolveRealTaskId(taskId);
-    const res = await action(workspaceId, projectId, realTaskId, labelId);
+    let res;
+    try {
+      res = await withActionRetry(() => action(workspaceId, projectId, realTaskId, labelId));
+    } catch {
+      setError("Could not save. Please try again.");
+      setLocalLabels(initialLabels);
+      return;
+    }
     if (res.error) {
       setError(res.error);
       setLocalLabels(initialLabels);
@@ -409,7 +417,10 @@ export function TaskDetailModal({
     async (_prev: { error?: string }, formData: FormData) => {
       const value = String(formData.get("title") || "");
       const realId = await resolveRealTaskId(task.id);
-      return updateTaskFieldAction(workspaceId, projectId, realId, "title", value);
+      // Title updates are idempotent sets — safe to retry on transport abort.
+      return withActionRetry(() =>
+        updateTaskFieldAction(workspaceId, projectId, realId, "title", value),
+      );
     },
     {},
   );
@@ -418,7 +429,9 @@ export function TaskDetailModal({
     async (_prev: { error?: string }, formData: FormData) => {
       const value = String(formData.get("description") || "");
       const realId = await resolveRealTaskId(task.id);
-      return updateTaskFieldAction(workspaceId, projectId, realId, "description", value);
+      return withActionRetry(() =>
+        updateTaskFieldAction(workspaceId, projectId, realId, "description", value),
+      );
     },
     {},
   );
@@ -441,25 +454,42 @@ export function TaskDetailModal({
     } else if (field === "sprintId") {
       onTaskPatch?.(task.id, { sprintId: value || null });
     }
-    await updateTaskFieldAction(workspaceId, projectId, realId, field, value);
+    try {
+      await withActionRetry(() =>
+        updateTaskFieldAction(workspaceId, projectId, realId, field, value),
+      );
+    } catch {
+      // Transport aborted after request was sent — reconcile with server.
+    }
     router.refresh();
   }
 
   async function handleSaveCustomField(fieldId: string, val: unknown) {
     setCustomFieldError(null);
     const realId = await resolveRealTaskId(task.id);
-    const res = await setTaskCustomFieldValueAction(
-      workspaceId,
-      projectId,
-      realId,
-      fieldId,
-      val,
-    );
+    let res;
+    try {
+      res = await withActionRetry(() =>
+        setTaskCustomFieldValueAction(
+          workspaceId,
+          projectId,
+          realId,
+          fieldId,
+          val,
+        ),
+      );
+    } catch {
+      setCustomFieldError("Could not save. Please try again.");
+      return;
+    }
     if (res.error) {
       setCustomFieldError(res.error);
-    } else {
-      router.refresh();
     }
+    // NOTE: no router.refresh() here on purpose. The drawer already shows
+    // the optimistic value, the board never displays custom fields, and an
+    // immediate refresh would abort the NEXT save POST racing it ("destination
+    // stream closed early"). Fresh state arrives on close/reload or the next
+    // unrelated refresh.
   }
 
 

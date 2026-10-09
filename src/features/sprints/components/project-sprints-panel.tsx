@@ -13,6 +13,8 @@ import {
 } from "@/features/sprints/actions";
 import type { SprintRecord } from "@/features/sprints/sprint-service";
 import { formatDate } from "@/lib/dates";
+import { withActionRetry } from "@/lib/action-retry";
+import { withMutation } from "@/lib/mutation-busy";
 
 function formatSprintDate(d: Date | null): string {
   if (!d) return "";
@@ -40,7 +42,9 @@ function SprintRow({
   const [editError, setEditError] = useState<string | undefined>();
 
   const [deleteState, doDeleteAction, deletePending] = useActionState(
-    (_prev: { error?: string }) => deleteSprintAction(workspaceId, projectId, sprint.id),
+    (_prev: { error?: string }) =>
+      // Sprint deletes are non-idempotent: gate refreshes, never retry.
+      withMutation(() => deleteSprintAction(workspaceId, projectId, sprint.id)),
     {},
   );
 
@@ -53,10 +57,13 @@ function SprintRow({
     newOrder.splice(targetIdx, 0, moved);
 
     startTransition(async () => {
-      await reorderSprintsAction(
-        workspaceId,
-        projectId,
-        newOrder.map((s) => s.id),
+      // Reorder is idempotent (same final order) — safe to retry on abort.
+      await withActionRetry(() =>
+        reorderSprintsAction(
+          workspaceId,
+          projectId,
+          newOrder.map((s) => s.id),
+        ),
       );
     });
   }
@@ -65,7 +72,10 @@ function SprintRow({
     e.preventDefault();
     setEditError(undefined);
     const formData = new FormData(e.currentTarget);
-    const res = await updateSprintAction(workspaceId, projectId, sprint.id, formData);
+    // Sprint field updates are idempotent sets — safe to retry on abort.
+    const res = await withActionRetry(() =>
+      updateSprintAction(workspaceId, projectId, sprint.id, formData),
+    );
     if (res.error) {
       setEditError(res.error);
     } else {

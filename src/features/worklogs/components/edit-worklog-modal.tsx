@@ -7,6 +7,7 @@ import { CloseIcon, EditIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDuration, formatDurationDetailed, parseDuration } from "../duration";
 import { updateWorklogAction } from "../actions";
+import { withActionRetry } from "@/lib/action-retry";
 import type { WorklogRecord } from "../worklog-service";
 
 interface EditWorklogModalProps {
@@ -32,7 +33,10 @@ export function EditWorklogModal({
 
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
-      const res = await updateWorklogAction(workspaceId, projectId, worklog.id, formData);
+      // Worklog edits are idempotent sets — safe to retry on transport abort.
+      const res = await withActionRetry(() =>
+        updateWorklogAction(workspaceId, projectId, worklog.id, formData),
+      );
       if (!res?.error) {
         onClose();
       }

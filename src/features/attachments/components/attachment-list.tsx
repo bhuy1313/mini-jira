@@ -11,6 +11,7 @@ import {
 } from "@/features/attachments/actions";
 import type { AttachmentRecord } from "@/features/attachments/attachment-service";
 import { formatDate } from "@/lib/dates";
+import { withMutation } from "@/lib/mutation-busy";
 import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
 
 function formatSize(bytes: number): string {
@@ -100,7 +101,9 @@ export function AttachmentList({
     async (prev: { error?: string }, formData: FormData) => {
       // Await the real id when uploading right after task creation.
       const realTaskId = await resolveRealTaskId(taskId);
-      const res = await addAttachmentAction(workspaceId, projectId, realTaskId, formData);
+      const res = await withMutation(() =>
+        addAttachmentAction(workspaceId, projectId, realTaskId, formData),
+      );
       if (!res.error) setFileName("");
       return res;
     },

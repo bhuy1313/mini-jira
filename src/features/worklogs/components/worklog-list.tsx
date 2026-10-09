@@ -11,6 +11,7 @@ import { ClockIcon, EditIcon, PlusIcon, TrashIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/dates";
+import { withMutation } from "@/lib/mutation-busy";
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -52,7 +53,7 @@ export function WorklogList({
     }
     setDeletingId(worklogId);
     startTransition(async () => {
-      await deleteWorklogAction(workspaceId, projectId, worklogId);
+      await withMutation(() => deleteWorklogAction(workspaceId, projectId, worklogId));
       setDeletingId(null);
       router.refresh();
     });

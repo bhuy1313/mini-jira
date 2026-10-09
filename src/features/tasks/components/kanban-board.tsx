@@ -35,6 +35,8 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
 import { resolveRealTaskId, trackPendingTask } from "@/features/tasks/pending-task-ids";
+import { withActionRetry } from "@/lib/action-retry";
+import { beginMutation, endMutation, isMutationBusy } from "@/lib/mutation-busy";
 
 import type { ActivityRecord } from "@/features/activities/activity-service";
 import type { AttachmentRecord } from "@/features/attachments/attachment-service";
@@ -197,7 +199,10 @@ function SortableTaskCard({
     async (_prev: { error?: string }, formData: FormData) => {
       const value = String(formData.get("title") || "");
       const realId = await resolveRealTaskId(task.id);
-      return updateTaskFieldAction(workspaceId, projectId, realId, "title", value);
+      // Title updates are idempotent sets — safe to retry on transport abort.
+      return withActionRetry(() =>
+        updateTaskFieldAction(workspaceId, projectId, realId, "title", value),
+      );
     },
     {},
   );
@@ -671,6 +676,7 @@ export function KanbanBoard({
     }));
 
     setIsMutating(true);
+    beginMutation();
     let resolveCreate!: (id: string | null) => void;
     trackPendingTask(
       tempId,
@@ -716,7 +722,12 @@ export function KanbanBoard({
       return { error };
     } finally {
       setIsMutating(false);
-      router.refresh();
+      endMutation();
+      // NOTE: no manual router.refresh() here. The server action already
+      // calls revalidatePath, and Next refetches automatically on success.
+      // A manual refresh right after a mutation doubles full-page renders
+      // and, on slow dev servers, starves the NEXT rapid mutation POST
+      // ("destination stream closed early"). Live/poll refreshes cover the rest.
     }
   }
 
@@ -755,11 +766,13 @@ export function KanbanBoard({
   async function handleMoveStatus(taskId: string, targetStatusId: string) {    // Await the real id when the card is still optimistic (rapid
     // create-then-move) — the server rejects temp ids.
     setIsMutating(true);
+    beginMutation();
     const realId = await resolveRealTaskId(taskId);
     const sourceStatusId =
       findContainer(realId) ?? (realId !== taskId ? findContainer(taskId) : null);
     if (!sourceStatusId || sourceStatusId === targetStatusId) {
       setIsMutating(false);
+      endMutation();
       return;
     }
 
@@ -797,17 +810,20 @@ export function KanbanBoard({
       setItems(groupByStatus(tasks, statuses));
     } finally {
       setIsMutating(false);
-      router.refresh();
+      endMutation();
+      // No manual refresh — the action's revalidatePath already refetches.
     }
   }
 
   async function handleDeleteTask(taskId: string) {
     setIsMutating(true);
+    beginMutation();
     const realId = await resolveRealTaskId(taskId);
     const containerId =
       findContainer(realId) ?? (realId !== taskId ? findContainer(taskId) : null);
     if (!containerId) {
       setIsMutating(false);
+      endMutation();
       return;
     }
     setBoardError(null);
@@ -845,7 +861,8 @@ export function KanbanBoard({
       setBoardError("Task could not be deleted.");
     } finally {
       setIsMutating(false);
-      router.refresh();
+      endMutation();
+      // No manual refresh — the action's revalidatePath already refetches.
     }
   }
 
@@ -856,20 +873,37 @@ export function KanbanBoard({
     }
   }
 
+  // Mirror of isDragging/isMutating for timeout callbacks, which otherwise
+  // close over stale render state. Updated every commit.
+  const busyRef = useRef(false);
+  useEffect(() => {
+    busyRef.current = isDragging || isMutating;
+  });
+
+  function scheduleBoardRefresh() {
+    if (refreshTimerRef.current !== null) return;
+    refreshTimerRef.current = setTimeout(() => {
+      refreshTimerRef.current = null;
+      if (busyRef.current || isMutationBusy()) {
+        // A mutation started after the event arrived — retry when idle
+        // instead of firing a refresh into its request stream.
+        scheduleBoardRefresh();
+        return;
+      }
+      router.refresh();
+    }, 50);
+  }
+
   useLiveEvents(workspaceId, (event) => {
     if (event.kind !== "board" || (event.projectId && event.projectId !== projectId)) return;
-    if (isDragging || isMutating) return;
-    if (refreshTimerRef.current !== null) return;
+    if (isDragging || isMutating || isMutationBusy()) return;
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem(
         "mini-jira:last-board-event",
         JSON.stringify({ projectId: event.projectId ?? null, ts: Date.now() }),
       );
     }
-    refreshTimerRef.current = setTimeout(() => {
-      refreshTimerRef.current = null;
-      router.refresh();
-    }, 50);
+    scheduleBoardRefresh();
   });
 
   useEffect(() => {
@@ -971,6 +1005,7 @@ export function KanbanBoard({
 
     // Resolve optimistic temp ids (rapid create-then-drag) before any server call.
     setIsMutating(true);
+    beginMutation();
     const activeTaskId = await resolveRealTaskId(String(active.id));
 
     if (String(over.id).startsWith("sprint-target:")) {
@@ -987,10 +1022,12 @@ export function KanbanBoard({
           );
         } finally {
           setIsMutating(false);
-          router.refresh();
+          endMutation();
+          // No manual refresh — the action's revalidatePath already refetches.
         }
       } else {
         setIsMutating(false);
+        endMutation();
       }
       return;
     }
@@ -999,6 +1036,7 @@ export function KanbanBoard({
       findContainer(activeTaskId) ?? findContainer(String(active.id));
     if (!targetContainer) {
       setIsMutating(false);
+      endMutation();
       return;
     }
 
@@ -1038,7 +1076,8 @@ export function KanbanBoard({
       setItems(groupByStatus(tasks, statuses));
     } finally {
       setIsMutating(false);
-      router.refresh();
+      endMutation();
+      // No manual refresh — the action's revalidatePath already refetches.
     }
   }
 

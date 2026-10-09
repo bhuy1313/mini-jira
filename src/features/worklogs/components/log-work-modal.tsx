@@ -7,6 +7,7 @@ import { ClockIcon, CloseIcon, PlusIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDurationDetailed, parseDuration } from "../duration";
 import { logWorkAction } from "../actions";
+import { withMutation } from "@/lib/mutation-busy";
 import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
 
 interface LogWorkModalProps {
@@ -34,7 +35,9 @@ export function LogWorkModal({
     async (_prev: { error?: string }, formData: FormData) => {
       // Await the real id when logging work right after task creation.
       const realTaskId = await resolveRealTaskId(taskId);
-      const res = await logWorkAction(workspaceId, projectId, realTaskId, formData);
+      const res = await withMutation(() =>
+        logWorkAction(workspaceId, projectId, realTaskId, formData),
+      );
       if (!res?.error) {
         onClose();
       }

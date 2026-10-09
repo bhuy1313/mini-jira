@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
 import { createSubtaskAction, toggleSubtaskDoneAction, unlinkSubtaskAction } from "@/features/tasks/actions";
+import { withMutation } from "@/lib/mutation-busy";
 import { resolveRealTaskId, trackPendingTask } from "@/features/tasks/pending-task-ids";
 import type { SubtaskSummary } from "@/features/tasks/task-service";
 import type { MemberWithUser } from "@/features/workspaces/workspace-service";
@@ -60,11 +61,13 @@ export function SubtaskList({
     );
     startTransition(async () => {
       // Await the real id when toggling a just-created (optimistic) subtask.
-      const res = await toggleSubtaskDoneAction(
-        workspaceId,
-        projectId,
-        await resolveRealTaskId(subtaskId),
-        !currentDone,
+      const res = await withMutation(async () =>
+        toggleSubtaskDoneAction(
+          workspaceId,
+          projectId,
+          await resolveRealTaskId(subtaskId),
+          !currentDone,
+        ),
       );
       if (res.error) {
         setError(res.error);
@@ -81,10 +84,12 @@ export function SubtaskList({
     setLocalSubtasks((prev) => prev.filter((st) => st.id !== subtaskId));
     startTransition(async () => {
       // Await the real id when unlinking a just-created (optimistic) subtask.
-      const res = await unlinkSubtaskAction(
-        workspaceId,
-        projectId,
-        await resolveRealTaskId(subtaskId),
+      const res = await withMutation(async () =>
+        unlinkSubtaskAction(
+          workspaceId,
+          projectId,
+          await resolveRealTaskId(subtaskId),
+        ),
       );
       if (res.error) {
         setError(res.error);
@@ -132,11 +137,13 @@ export function SubtaskList({
       }
       formData.set("priority", "Medium");
 
-      const res = await createSubtaskAction(
-        workspaceId,
-        projectId,
-        await resolveRealTaskId(parentTaskId),
-        formData,
+      const res = await withMutation(async () =>
+        createSubtaskAction(
+          workspaceId,
+          projectId,
+          await resolveRealTaskId(parentTaskId),
+          formData,
+        ),
       );
 
       if (res.error || !res.task) {

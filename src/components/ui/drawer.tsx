@@ -20,8 +20,13 @@ export function Drawer({
   side?: "right" | "left";
   className?: string;
 }) {
+  // Non-modal: the slide-over preserves board context — background stays
+  // interactive (same as the pre-Radix drawer). A modal dialog would mark
+  // the board aria-hidden and break workflows that read board state while
+  // the drawer is open. Escape/backdrop-close still work via onOpenChange.
   return (
     <Dialog.Root
+      modal={false}
       open={open}
       onOpenChange={(next) => {
         if (!next) onClose();

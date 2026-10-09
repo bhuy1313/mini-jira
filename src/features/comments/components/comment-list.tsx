@@ -10,7 +10,9 @@ import { addCommentAction, deleteCommentAction, updateCommentAction } from "@/fe
 import type { CommentRecord } from "@/features/comments/comment-service";
 import type { MemberWithUser } from "@/features/workspaces/workspace-service";
 import { formatDateTime } from "@/lib/dates";
-import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
+import { withMutation } from "@/lib/mutation-busy";
+import { withActionRetry } from "@/lib/action-retry";
+import { resolveRealTaskId, trackPendingTask } from "@/features/tasks/pending-task-ids";
 
 import { useRouter } from "next/navigation";
 
@@ -43,7 +45,11 @@ function CommentItem({
       const prevText = localContent;
       setLocalContent(newText);
       setIsEditing(false);
-      const res = await updateCommentAction(workspaceId, projectId, comment.id, formData);
+      // Await the real id when editing a just-posted (optimistic) comment.
+      const realId = await resolveRealTaskId(comment.id);
+      const res = await withActionRetry(() =>
+        updateCommentAction(workspaceId, projectId, realId, formData),
+      );
       if (res.error) {
         setLocalContent(prevText);
         setIsEditing(true);
@@ -57,8 +63,12 @@ function CommentItem({
 
   const [deleteState, deleteAction, deletePending] = useActionState(
     async (_prev: { error?: string }) => {
+      // Await the real id when deleting a just-posted (optimistic) comment.
+      const realId = await resolveRealTaskId(comment.id);
       onDeleted?.(comment.id);
-      const res = await deleteCommentAction(workspaceId, projectId, comment.id);
+      const res = await withMutation(() =>
+        deleteCommentAction(workspaceId, projectId, realId),
+      );
       if (!res?.error) {
         router.refresh();
       }
@@ -180,6 +190,13 @@ export function CommentList({
       const content = String(formData.get("content") || "").trim();
       // Optimistic add so the comment shows instantly even if props lag.
       const tempId = `temp-${Date.now()}`;
+      let resolveCreate!: (id: string | null) => void;
+      trackPendingTask(
+        tempId,
+        new Promise<string | null>((r) => {
+          resolveCreate = r;
+        }),
+      );
       if (content) {
         const now = new Date();
         setComments((prev) => [
@@ -196,10 +213,21 @@ export function CommentList({
           },
         ]);
       }
-      const res = await addCommentAction(workspaceId, projectId, realTaskId, formData);
-      if (!res?.error) {
+      const res = await withMutation(() =>
+        addCommentAction(workspaceId, projectId, realTaskId, formData),
+      );
+      if (!res?.error && res?.comment) {
+        resolveCreate(res.comment.id);
+        // Swap the temp entry for the real one so follow-up edit/delete
+        // use a server-known id even before props refresh.
+        setComments((prev) => {
+          const next = prev.filter((c) => c.id !== tempId);
+          if (next.some((c) => c.id === res.comment!.id)) return next;
+          return [...next, res.comment!];
+        });
         router.refresh();
       } else {
+        resolveCreate(null);
         setComments((prev) => prev.filter((c) => c.id !== tempId));
       }
       return res;
@@ -246,7 +274,15 @@ export function CommentList({
               actorRole={actorRole}
               actorUserId={actorUserId}
               members={members}
-              onDeleted={(id) => setComments((prev) => prev.filter((c) => c.id !== id))}
+              onDeleted={(id) => {
+                // Remove both the temp and real entries — the create swap
+                // may have replaced one with the other already.
+                void resolveRealTaskId(id).then((realId) => {
+                  setComments((prev) =>
+                    prev.filter((c) => c.id !== id && c.id !== realId),
+                  );
+                });
+              }}
             />
           ))}
         </ul>

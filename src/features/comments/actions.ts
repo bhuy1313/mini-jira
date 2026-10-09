@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { UnauthorizedError } from "@/features/authorization/errors";
 import { createCommentService } from "@/features/comments/comment-service";
+import type { CommentRecord } from "@/features/comments/comment-service";
 import { prismaCommentRepository } from "@/features/comments/prisma-comment-repository";
 import { publishBoardUpdate } from "@/features/live/live-publisher";
 import { liveNotificationPublisher } from "@/features/notifications/live-notification-publisher-prisma";
@@ -38,7 +39,7 @@ export async function addCommentAction(
   projectId: string,
   taskId: string,
   formData: FormData,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; comment?: CommentRecord }> {
   const actor = await requireProjectActor(workspaceId, projectId);
   const parsed = contentSchema.safeParse(formData.get("content"));
   if (!parsed.success) {
@@ -46,14 +47,13 @@ export async function addCommentAction(
   }
 
   try {
-    await commentService.addComment(actor, taskId, parsed.data);
+    const comment = await commentService.addComment(actor, taskId, parsed.data);
+    revalidatePath(boardPath(workspaceId, projectId));
+    publishBoardUpdate(workspaceId, projectId, actor.userId);
+    return { comment };
   } catch (error) {
     return { error: message(error) };
   }
-
-  revalidatePath(boardPath(workspaceId, projectId));
-  publishBoardUpdate(workspaceId, projectId, actor.userId);
-  return {};
 }
 
 /** Sửa comment — chỉ tác giả (FR-062). */
