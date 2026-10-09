@@ -46,12 +46,15 @@ export function useLiveEvents(
       // EventSource failed or unsupported
     }
 
-    // Fast polling fallback for Serverless environments (like Vercel) where SSE memory is isolated
+    // Polling fallback for Serverless environments (like Vercel) where SSE
+    // memory is isolated. Kept slow on purpose: SSE is the primary channel
+    // and every poll triggers a full board refresh — a tight interval
+    // saturates slow dev disks and starves action POSTs sharing the pg pool.
     const interval = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
         handlerRef.current({ kind: "board", workspaceId } as unknown as LiveEvent);
       }
-    }, 1500);
+    }, 8000);
 
     const handleSync = () => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {

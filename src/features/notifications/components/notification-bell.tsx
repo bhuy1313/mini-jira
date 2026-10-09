@@ -6,6 +6,7 @@ import { useState } from "react";
 import { BellIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { formatRelativeShort } from "@/lib/dates";
+import { isMutationBusy } from "@/lib/mutation-busy";
 import { startNavigation } from "@/lib/navigation-pending";
 import { useLiveEvents } from "@/features/live/use-live-events";
 import {
@@ -70,12 +71,21 @@ export function NotificationBell({
   const [lastUnread, setLastUnread] = useState(unreadCount);
 
   useLiveEvents(workspaceId, (event) => {
-    if (event.kind === "notifyRead") {
-      setDismissed(unreadCount);
-      router.refresh();
+    if (event.kind !== "notify" && event.kind !== "notifyRead") return;
+    // Don't fire a refresh into an in-flight mutation POST — defer once
+    // instead of dropping, so the badge still converges.
+    if (isMutationBusy()) {
+      setTimeout(() => {
+        if (!isMutationBusy()) router.refresh();
+      }, 1000);
+      if (event.kind === "notifyRead") {
+        setDismissed(unreadCount);
+      }
       return;
     }
-    if (event.kind !== "notify") return;
+    if (event.kind === "notifyRead") {
+      setDismissed(unreadCount);
+    }
     router.refresh();
   });
 

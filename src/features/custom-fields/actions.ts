@@ -214,10 +214,11 @@ export async function setTaskCustomFieldValueAction(
     return { error: message(error) };
   }
 
-  for (const path of projectPaths(workspaceId, projectId)) {
-    revalidatePath(path);
-  }
-  publishBoardUpdate(workspaceId, projectId, actor.userId);
+  // NOTE: intentionally no revalidatePath/publishBoardUpdate here. The drawer
+  // already shows the optimistic value and the board never displays custom
+  // fields — a revalidation storm here aborts the NEXT rapid save POST
+  // ("destination stream closed early"). Fresh state arrives on close/reload
+  // or the next unrelated refresh.
   return {};
 }
 

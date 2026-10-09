@@ -44,7 +44,10 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
   },
   rateLimit: {
-    enabled: process.env.NODE_ENV === "production",
+    // Disabled in dev. In production it stays on unless explicitly lifted
+    // for end-to-end runs (E2E=1) — rapid signup/session traffic would
+    // otherwise 429 the suite. Never set E2E=1 on a real deployment.
+    enabled: process.env.NODE_ENV === "production" && process.env.E2E !== "1",
     window: 10,
     max: 100,
   },

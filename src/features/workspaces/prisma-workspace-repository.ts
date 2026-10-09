@@ -55,12 +55,17 @@ export const prismaWorkspaceRepository: WorkspaceRepository = {
       select: { userId: true, role: true, user: { select: { name: true, email: true } } },
       orderBy: { createdAt: "asc" },
     });
-    return rows.map((r) => ({
-      userId: r.userId,
-      role: r.role as DomainRole,
-      name: r.user.name,
-      email: r.user.email,
-    }));
+    // Defensive: a concurrent user cleanup can commit between the member
+    // scan and the user join, leaving r.user null for a instant. Skipping
+    // such rows avoids a 500 on board loads during E2E cleanup races.
+    return rows
+      .filter((r) => r.user !== null)
+      .map((r) => ({
+        userId: r.userId,
+        role: r.role as DomainRole,
+        name: r.user.name,
+        email: r.user.email,
+      }));
   },
 
   async createWorkspaceWithOwner(input: {

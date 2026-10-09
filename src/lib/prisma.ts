@@ -15,7 +15,10 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter: new PrismaPg({ connectionString }),
+    // Generous local pool: E2E/dev runs concurrent SSE streams, 1.5s polls
+    // and action POSTs against slow disks. PgBouncer/Neon URLs manage their
+    // own pooling server-side; this only raises the client-side ceiling.
+    adapter: new PrismaPg({ connectionString, max: 25 }),
   });
 
 globalForPrisma.prisma = prisma;
