@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { UnauthorizedError } from "@/features/authorization/errors";
 import { prismaLabelRepository } from "@/features/labels/prisma-label-repository";
 import { createLabelService } from "@/features/labels/label-service";
+import type { LabelRecord } from "@/features/labels/label-service";
 import { requireProjectActor } from "@/features/workspaces/session";
 
 const labelService = createLabelService({ repo: prismaLabelRepository });
@@ -24,19 +25,19 @@ export async function createLabelAction(
   workspaceId: string,
   projectId: string,
   formData: FormData,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; label?: LabelRecord }> {
   const actor = await requireProjectActor(workspaceId, projectId);
   const name = String(formData.get("name") || "");
   const color = String(formData.get("color") || "");
   try {
-    await labelService.createLabel(actor, projectId, { name, color });
+    const label = await labelService.createLabel(actor, projectId, { name, color });
+    for (const path of projectPaths(workspaceId, projectId)) {
+      revalidatePath(path);
+    }
+    return { label };
   } catch (error) {
     return { error: message(error) };
   }
-  for (const path of projectPaths(workspaceId, projectId)) {
-    revalidatePath(path);
-  }
-  return {};
 }
 
 /** Update a label — Owner/Admin (Mốc 10). */

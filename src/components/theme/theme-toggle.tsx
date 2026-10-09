@@ -1,15 +1,36 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { LaptopIcon, MoonIcon, SunIcon, CheckIcon } from "@/components/ui/icons";
 import { useTheme, type Theme } from "@/components/theme/theme-provider";
 import { cn } from "@/lib/cn";
+
+/**
+ * True only after client hydration. next-themes renders `system` on the
+ * server and resolves the real theme on the client — gating theme-dependent
+ * UI on this avoids hydration-mismatch warnings. Implemented with
+ * useSyncExternalStore (server snapshot `false`, client `true`) so no
+ * set-state-in-effect is needed.
+ */
+function useMounted(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
 
 /** Quick 1-click or dropdown Theme Toggle for Header & Topbars */
 export function ThemeQuickToggle() {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
+  const mounted = useMounted();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // next-themes renders `system` on the server and only resolves the real
+  // theme on the client — rendering the icon before mount causes a
+  // hydration-mismatch warning. The placeholder keeps the same footprint
+  // so the header does not shift.
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -25,6 +46,12 @@ export function ThemeQuickToggle() {
 
   return (
     <div className="relative" ref={dropdownRef}>
+      {!mounted ? (
+        <div
+          aria-hidden
+          className="size-8 rounded-md border border-rule bg-paper"
+        />
+      ) : (
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -38,6 +65,7 @@ export function ThemeQuickToggle() {
           <SunIcon className="size-4 text-amber-500" />
         )}
       </button>
+      )}
 
       {open && (
         <div
@@ -116,6 +144,10 @@ export function ThemeQuickToggle() {
 /** Rich Appearance Settings Card for Account Page (`/account`) */
 export function ThemeAppearanceSection() {
   const { theme, setTheme } = useTheme();
+  const mounted = useMounted();
+
+  // Same SSR/client split as the quick toggle: the selected ring depends
+  // on the stored theme, which only resolves on the client.
 
   const options: {
     id: Theme;
@@ -169,6 +201,16 @@ export function ThemeAppearanceSection() {
         </p>
       </div>
 
+      {!mounted ? (
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3" aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-36 rounded-lg border border-rule bg-paper/50"
+            />
+          ))}
+        </div>
+      ) : (
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Theme options">
         {options.map((opt) => {
           const isSelected = theme === opt.id;
@@ -227,6 +269,7 @@ export function ThemeAppearanceSection() {
           );
         })}
       </div>
+      )}
     </section>
   );
 }

@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 import { withActionRetry } from "@/lib/action-retry";
 import { withMutation } from "@/lib/mutation-busy";
+import { resolveRealTaskId, trackPendingTask } from "@/features/tasks/pending-task-ids";
 import {
   createLabelAction,
   deleteLabelAction,
@@ -73,8 +74,10 @@ function LabelRow({
   const [editColor, setEditColor] = useState(label.color);
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
+      // Await the real id when editing a just-created (optimistic) label.
+      const realId = await resolveRealTaskId(label.id);
       const res = await withActionRetry(() =>
-        updateLabelAction(workspaceId, projectId, label.id, formData),
+        updateLabelAction(workspaceId, projectId, realId, formData),
       );
       if (!res?.error) {
         setEditing(false);
@@ -87,9 +90,11 @@ function LabelRow({
   const [deleteState, deleteAction, deletePending] = useActionState(
     async (_prev: { error?: string }) => {
       onDeleted?.(label.id);
+      // Await the real id when deleting a just-created (optimistic) label.
+      const realId = await resolveRealTaskId(label.id);
       // Label deletes are non-idempotent: gate refreshes, never retry.
       const res = await withMutation(() =>
-        deleteLabelAction(workspaceId, projectId, label.id),
+        deleteLabelAction(workspaceId, projectId, realId),
       );
       router.refresh();
       return res;
@@ -209,11 +214,20 @@ export function ManageLabelsModal({
     async (_prev: { error?: string }, formData: FormData) => {
       const labelName = String(formData.get("name") || "").trim();
       const labelColor = String(formData.get("color") || "");
+      // Optimistic add so the label shows instantly even if props lag.
+      const tempId = `temp-${Date.now()}`;
+      let resolveCreate!: (id: string | null) => void;
+      trackPendingTask(
+        tempId,
+        new Promise<string | null>((r) => {
+          resolveCreate = r;
+        }),
+      );
       if (labelName) {
         setLocalLabels((prev) => [
           ...prev,
           {
-            id: `temp-${Date.now()}`,
+            id: tempId,
             projectId,
             workspaceId,
             name: labelName,
@@ -225,10 +239,20 @@ export function ManageLabelsModal({
       const res = await withMutation(() =>
         createLabelAction(workspaceId, projectId, formData),
       );
-      if (!res?.error) {
+      if (!res?.error && res?.label) {
+        resolveCreate(res.label.id);
+        // Swap the temp entry for the real one so follow-up edit/delete
+        // use a server-known id even before props refresh.
+        const realLabel = res.label;
+        setLocalLabels((prev) => {
+          const next = prev.filter((l) => l.id !== tempId);
+          if (next.some((l) => l.id === realLabel.id)) return next;
+          return [...next, realLabel];
+        });
         setName("");
         router.refresh();
       } else {
+        resolveCreate(null);
         setLocalLabels(initialLabels);
       }
       return res;
