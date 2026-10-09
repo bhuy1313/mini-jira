@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
 import { createSubtaskAction, toggleSubtaskDoneAction, unlinkSubtaskAction } from "@/features/tasks/actions";
+import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
 import type { SubtaskSummary } from "@/features/tasks/task-service";
 import type { MemberWithUser } from "@/features/workspaces/workspace-service";
 
@@ -120,7 +121,7 @@ export function SubtaskList({
       const res = await createSubtaskAction(
         workspaceId,
         projectId,
-        parentTaskId,
+        await resolveRealTaskId(parentTaskId),
         formData,
       );
 

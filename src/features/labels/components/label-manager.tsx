@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { CheckIcon, CloseIcon, TrashIcon } from "@/components/ui/icons";
@@ -191,9 +191,13 @@ export function ManageLabelsModal({
   const [selectedColor, setSelectedColor] = useState(LABEL_COLOR_OPTIONS[0].hex);
   const [name, setName] = useState("");
 
-  useEffect(() => {
+  // Sync server props into optimistic local state during render (not in an
+  // effect) when the incoming list identity changes.
+  const [prevInitialLabels, setPrevInitialLabels] = useState(initialLabels);
+  if (prevInitialLabels !== initialLabels) {
+    setPrevInitialLabels(initialLabels);
     setLocalLabels(initialLabels);
-  }, [initialLabels]);
+  }
 
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {

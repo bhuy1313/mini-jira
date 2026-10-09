@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useActionState } from "react";
 
@@ -108,9 +108,13 @@ function TaskLabelPicker({
   const [localLabels, setLocalLabels] = useState(initialLabels);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Sync server props into optimistic local state during render (not in an
+  // effect) when the incoming list identity changes.
+  const [prevInitialLabels, setPrevInitialLabels] = useState(initialLabels);
+  if (prevInitialLabels !== initialLabels) {
+    setPrevInitialLabels(initialLabels);
     setLocalLabels(initialLabels);
-  }, [initialLabels]);
+  }
 
   const attachedIds = new Set(localLabels.map((l) => l.id));
   const available = projectLabels.filter((l) => !attachedIds.has(l.id));
@@ -123,7 +127,9 @@ function TaskLabelPicker({
       const added = projectLabels.find((l) => l.id === labelId);
       if (added) setLocalLabels((prev) => [...prev, added]);
     }
-    const res = await action(workspaceId, projectId, taskId, labelId);
+    // Await the real id when toggling right after task creation.
+    const realTaskId = await resolveRealTaskId(taskId);
+    const res = await action(workspaceId, projectId, realTaskId, labelId);
     if (res.error) {
       setError(res.error);
       setLocalLabels(initialLabels);
@@ -193,10 +199,14 @@ function TaskCustomFieldInput({
   );
   const [localBool, setLocalBool] = useState<boolean>(Boolean(value));
 
-  useEffect(() => {
+  // Sync the incoming value into local editing state during render (not in
+  // an effect) when it changes.
+  const [prevValue, setPrevValue] = useState(value);
+  if (prevValue !== value) {
+    setPrevValue(value);
     setLocalVal(value !== null && value !== undefined ? String(value) : "");
     setLocalBool(Boolean(value));
-  }, [value]);
+  }
 
   if (!canEdit) {
     let displayVal = "—";

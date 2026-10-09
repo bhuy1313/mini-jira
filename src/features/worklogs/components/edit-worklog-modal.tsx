@@ -3,7 +3,7 @@
 import { useActionState, useRef, useState, useEffect } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
-import { ClockIcon, CloseIcon, EditIcon } from "@/components/ui/icons";
+import { CloseIcon, EditIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDuration, formatDurationDetailed, parseDuration } from "../duration";
 import { updateWorklogAction } from "../actions";
@@ -41,14 +41,26 @@ export function EditWorklogModal({
     {},
   );
 
+  // Reset form state on open transition / worklog change during render
+  // (not in an effect).
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevWorklog, setPrevWorklog] = useState(worklog);
+  if (open && (!prevOpen || prevWorklog !== worklog)) {
+    setPrevOpen(true);
+    setPrevWorklog(worklog);
+    setTimeSpentText(formatDuration(worklog.timeSpentMinutes));
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
+
   useEffect(() => {
     if (open) {
-      setTimeSpentText(formatDuration(worklog.timeSpentMinutes));
-      setTimeout(() => {
+      const t = setTimeout(() => {
         timeInputRef.current?.focus();
       }, 50);
+      return () => clearTimeout(t);
     }
-  }, [open, worklog]);
+  }, [open]);
 
   const parsedMinutes = parseDuration(timeSpentText);
 

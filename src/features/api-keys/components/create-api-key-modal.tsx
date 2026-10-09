@@ -30,12 +30,21 @@ export function CreateApiKeyModal({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Reset form state on open transition during render (not in an effect).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open && !wasOpen) {
+    setWasOpen(true);
+    setName("");
+    setExpiresAt("");
+    setError(null);
+  } else if (!open && wasOpen) {
+    setWasOpen(false);
+  }
+
   useEffect(() => {
     if (open) {
-      setName("");
-      setExpiresAt("");
-      setError(null);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      const t = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
     }
   }, [open]);
 

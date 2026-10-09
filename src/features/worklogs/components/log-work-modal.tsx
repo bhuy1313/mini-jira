@@ -7,6 +7,7 @@ import { ClockIcon, CloseIcon, PlusIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDurationDetailed, parseDuration } from "../duration";
 import { logWorkAction } from "../actions";
+import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
 
 interface LogWorkModalProps {
   open: boolean;
@@ -31,7 +32,9 @@ export function LogWorkModal({
 
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
-      const res = await logWorkAction(workspaceId, projectId, taskId, formData);
+      // Await the real id when logging work right after task creation.
+      const realTaskId = await resolveRealTaskId(taskId);
+      const res = await logWorkAction(workspaceId, projectId, realTaskId, formData);
       if (!res?.error) {
         onClose();
       }
@@ -40,12 +43,21 @@ export function LogWorkModal({
     {},
   );
 
+  // Reset form state on open transition during render (not in an effect).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    setTimeSpentText("");
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
+
   useEffect(() => {
     if (open) {
-      setTimeSpentText("");
-      setTimeout(() => {
+      const t = setTimeout(() => {
         timeInputRef.current?.focus();
       }, 50);
+      return () => clearTimeout(t);
     }
   }, [open]);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useActionState } from "react";
+import { useState, useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/ui/markdown";
@@ -10,6 +10,7 @@ import { addCommentAction, deleteCommentAction, updateCommentAction } from "@/fe
 import type { CommentRecord } from "@/features/comments/comment-service";
 import type { MemberWithUser } from "@/features/workspaces/workspace-service";
 import { formatDateTime } from "@/lib/dates";
+import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
 
 import { useRouter } from "next/navigation";
 
@@ -57,7 +58,11 @@ function CommentItem({
   const [deleteState, deleteAction, deletePending] = useActionState(
     async (_prev: { error?: string }) => {
       onDeleted?.(comment.id);
-      return deleteCommentAction(workspaceId, projectId, comment.id);
+      const res = await deleteCommentAction(workspaceId, projectId, comment.id);
+      if (!res?.error) {
+        router.refresh();
+      }
+      return res;
     },
     {},
   );
@@ -160,15 +165,42 @@ export function CommentList({
   const router = useRouter();
   const [comments, setComments] = useState(initialComments);
 
-  useEffect(() => {
+  // Sync server props into optimistic local state during render (not in an
+  // effect) when the incoming list identity changes.
+  const [prevInitialComments, setPrevInitialComments] = useState(initialComments);
+  if (prevInitialComments !== initialComments) {
+    setPrevInitialComments(initialComments);
     setComments(initialComments);
-  }, [initialComments]);
+  }
 
   const [addState, addAction, addPending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
-      const res = await addCommentAction(workspaceId, projectId, taskId, formData);
+      // Await the real id when commenting right after task creation.
+      const realTaskId = await resolveRealTaskId(taskId);
+      const content = String(formData.get("content") || "").trim();
+      // Optimistic add so the comment shows instantly even if props lag.
+      const tempId = `temp-${Date.now()}`;
+      if (content) {
+        const now = new Date();
+        setComments((prev) => [
+          ...prev,
+          {
+            id: tempId,
+            taskId: realTaskId,
+            workspaceId,
+            projectId,
+            authorId: actorUserId,
+            content,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ]);
+      }
+      const res = await addCommentAction(workspaceId, projectId, realTaskId, formData);
       if (!res?.error) {
         router.refresh();
+      } else {
+        setComments((prev) => prev.filter((c) => c.id !== tempId));
       }
       return res;
     },
