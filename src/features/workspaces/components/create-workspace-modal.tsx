@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  getFormProps,
+  getInputProps,
+  getTextareaProps,
+  useForm,
+} from "@conform-to/react";
+import { parseWithZod } from "@conform-to/zod/v4";
 import { useActionState, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +16,8 @@ import { Input, Textarea } from "@/components/ui/inputs";
 import { Modal } from "@/components/ui/modal";
 import { Spinner } from "@/components/ui/spinner";
 import { createWorkspaceAction } from "@/features/workspaces/actions";
+import { createWorkspaceSchema } from "@/features/workspaces/workspace-schema";
+import type { FieldErrors } from "@/lib/validation";
 import { WorkspaceIconPicker } from "@/features/workspaces/components/workspace-icon-picker";
 
 export function CreateWorkspaceModal({
@@ -23,10 +32,20 @@ export function CreateWorkspaceModal({
   const [selectedIconId, setSelectedIconId] = useState<string | null>("rocket");
 
   const [state, formAction, pending] = useActionState(
-    (_prev: { error?: string } | undefined, formData: FormData) =>
-      createWorkspaceAction(formData),
+    (
+      _prev: { error?: string; fieldErrors?: FieldErrors } | undefined,
+      formData: FormData,
+    ) => createWorkspaceAction(formData),
     {},
   );
+
+  const [form, fields] = useForm({
+    onValidate({ formData }) {
+      return parseWithZod(formData, { schema: createWorkspaceSchema });
+    },
+    shouldValidate: "onBlur",
+    shouldRevalidate: "onInput",
+  });
 
   useEffect(() => {
     if (open) {
@@ -65,7 +84,7 @@ export function CreateWorkspaceModal({
         </button>
       </div>
 
-      <form action={formAction} className="p-5 space-y-4">
+      <form {...getFormProps(form)} action={formAction} className="p-5 space-y-4">
         {/* Workspace Icon Picker */}
         <WorkspaceIconPicker
           selectedIconId={selectedIconId}
@@ -73,24 +92,32 @@ export function CreateWorkspaceModal({
           onSelect={setSelectedIconId}
         />
 
-        <Field label="Workspace name">
+        <Field
+          label="Workspace name"
+          error={fields.name.errors?.[0] ?? state.fieldErrors?.name?.[0]}
+        >
           <Input
+            {...getInputProps(fields.name, { type: "text" })}
             ref={inputRef}
-            name="name"
-            required
-            maxLength={80}
             value={workspaceName}
             onChange={(e) => setWorkspaceName(e.target.value)}
+            maxLength={80}
             placeholder="e.g. Acme Engineering, Design Ops"
             aria-label="Workspace name"
             className="text-sm"
           />
         </Field>
 
-        <Field label="Description" hint="optional">
+        <Field
+          label="Description"
+          hint="optional"
+          error={
+            fields.description.errors?.[0] ??
+            state.fieldErrors?.description?.[0]
+          }
+        >
           <Textarea
-            name="description"
-            maxLength={500}
+            {...getTextareaProps(fields.description)}
             placeholder="What is the main purpose of this workspace?"
             aria-label="Workspace description"
             rows={2}

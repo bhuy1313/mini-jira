@@ -6,6 +6,11 @@ import { z } from "zod";
 
 import { UnauthorizedError } from "@/features/authorization/errors";
 import { prisma } from "@/lib/prisma";
+import {
+  fieldErrorsFromZod,
+  firstIssueMessage,
+  type FieldErrors,
+} from "@/lib/validation";
 import { liveNotificationPublisher } from "@/features/notifications/live-notification-publisher-prisma";
 import { createWorkspaceService } from "@/features/workspaces/workspace-service";
 import { prismaWorkspaceRepository } from "@/features/workspaces/prisma-workspace-repository";
@@ -16,17 +21,10 @@ const workspaceService = createWorkspaceService({
   notifications: liveNotificationPublisher,
 });
 
-const createSchema = z.object({
-  name: z.string().trim().min(1, "Workspace name is required.").max(80, "Workspace name must be at most 80 characters."),
-  description: z.string().trim().max(500, "Description must be at most 500 characters.").optional(),
-  icon: z.string().trim().max(50).optional(),
-});
-
-const updateSchema = z.object({
-  name: z.string().trim().min(1, "Workspace name is required.").max(80, "Workspace name must be at most 80 characters."),
-  description: z.string().trim().max(500, "Description must be at most 500 characters.").optional(),
-  icon: z.string().trim().max(50).optional(),
-});
+import {
+  createWorkspaceSchema,
+  updateWorkspaceSchema,
+} from "@/features/workspaces/workspace-schema";
 
 const addMemberSchema = z.object({
   email: z.string().trim().min(1, "Email is required.").email("Invalid email."),
@@ -47,17 +45,23 @@ function message(error: unknown): string {
 }
 
 /** Tạo workspace — creator trở thành Owner (FR-010, FR-011, FR-014). */
-export async function createWorkspaceAction(formData: FormData): Promise<{ error?: string }> {
+export async function createWorkspaceAction(formData: FormData): Promise<{
+  error?: string;
+  fieldErrors?: FieldErrors;
+}> {
   const user = await getSessionUser();
   if (!user) redirect("/auth");
 
-  const parsed = createSchema.safeParse({
+  const parsed = createWorkspaceSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     icon: formData.get("icon") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid data." };
+    return {
+      error: firstIssueMessage(parsed.error),
+      fieldErrors: fieldErrorsFromZod(parsed.error),
+    };
   }
 
   const ws = await workspaceService.createWorkspace(
@@ -77,7 +81,7 @@ export async function updateWorkspaceAction(
   formData: FormData,
 ): Promise<{ error?: string }> {
   const actor = await requireActor(workspaceId);
-  const parsed = updateSchema.safeParse({
+  const parsed = updateWorkspaceSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     icon: formData.get("icon") || undefined,

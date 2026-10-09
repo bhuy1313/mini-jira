@@ -114,6 +114,31 @@ Bỏ qua (ít traffic/cần xác minh): `/auth`, `/dashboard`, `projects/[projec
 
 ---
 
+## BACKLOG — khảo sát "lib thay tự làm" (07/10, đã ĐÁNH GIÁ LẠI, biết vậy thôi KHI KHÁC LÀM)
+
+Tất cả free/open-source. Đã re-evaluate với 2 facts: **repo chưa có config deploy nào** (no Dockerfile/vercel/.github → chưa cần monitor/ratelimit cấp bách) và **timesheet thiếu quyết định timezone** (week range tính theo local server `timesheet-service.ts:86-108`, DB UTC) — không phải thiếu lib.
+
+**Làm ngay được (không phụ thuộc infra):**
+1. **sonner** — repo HIỆN KHÔNG CÓ toast; feedback inline `role="alert"` rải rác ~40 chỗ. 1 lệnh cài.
+2. **pino** — logging chỉ `console.error` (12 chỗ nuốt lỗi bằng `.catch(console.error)`). Free local, không tài khoản.
+
+**Làm khi có nhu cầu thật:**
+3. **Radix UI** primitives (modal/menu/popover/tooltip/select) — modal thiếu focus trap/scroll lock/portal, menu thiếu arrow-key, tooltip = native `title`. Nhưng axe test đang pass → sửa targeted (focus-trap) cũng được; Radix đáng nhất khi làm nhiều UI mới.
+4. **date-fns** — chỉ để nhất quán format (21 chỗ `toLocaleString` mỗi nơi 1 kiểu) + relative time. **Không sửa được bug TZ** — việc đó cần chốt strategy (workspace TZ?) trước, tính bằng lib nào cũng được (date-fns-tz/Temporal).
+5. **cmdk** — fuzzy search + list nav cho palette. Lưu ý: phím tắt "G W" display-only là THIẾU FEATURE (chưa viết handler), cmdk không giải leader-key.
+6. **@conform-to/zod** — nếu muốn field-level errors; hợp với useActionState/server actions hơn react-hook-form (client-first). Hiện `safeParse` chỉ giữ `issues[0]`.
+7. **recharts** — nếu analytics lớn hơn (div-bar chưa axis/tooltip/a11y; burndown SVG tự làm thì ổn).
+
+**Làm khi deploy thật:**
+8. **@sentry/nextjs** — code free, service free tier 5K err/tháng. Chưa có production thì vô nghĩa.
+9. **Rate limit `/api/v1/*`** — khi expose public: server single-process (như SSE hub) → in-memory token bucket ~20 dòng là đủ, KHÔNG cần Upstash.
+
+**ĐỪNG mua (tự làm ổn):** theme provider, markdown stack (XSS-safe, tested — ngoại lệ: cần GFM table/image/strikethrough thì mới xem `react-markdown`), RBAC `permissions.ts`, CSV export, fractional indexing, dnd-kit (đã dùng lib).
+
+**Thiếu tính năng (không phải lib):** email (Better Auth chưa config send hook), webhook retry/queue, notification dedupe/preference, pagination UI (board load all), SSE hub single-process (multi-instance cần Redis pub/sub), task key dạng `PRJ-123` (chỉ UUID), workspace timezone.
+
+---
+
 ## OUT OF SCOPE (task riêng, đã ghi nhận)
 
 - Workspace layout `await` 4 queries (`layout.tsx:25-30`) chặn mọi nav **vào** workspace → cần tách data/Suspense riêng trong layout. `loading.tsx` không cứu phase này; bar phủ phase click→commit.

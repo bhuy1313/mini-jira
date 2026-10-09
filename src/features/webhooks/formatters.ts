@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/dates";
 import type { WebhookEventContext, WebhookFormat } from "./webhook-types";
 
 /**
@@ -75,7 +76,7 @@ export function formatSlackPayload(ctx: WebhookEventContext): Record<string, unk
         elements: [
           {
             type: "mrkdwn",
-            text: `Mini Jira • ${new Date(ctx.timestamp).toLocaleString()}`,
+            text: `Mini Jira • ${formatDateTime(ctx.timestamp)}`,
           },
         ],
       },

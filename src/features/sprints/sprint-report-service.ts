@@ -2,11 +2,12 @@ import type { ProjectActor } from "@/features/authorization/actor";
 import { requirePermission } from "@/features/authorization/actor";
 import { canViewTasks } from "@/features/authorization/permissions";
 import { UnauthorizedError, ValidationError } from "@/features/authorization/errors";
+import { formatShortDay } from "@/lib/dates";
 
 export interface BurndownDayPoint {
   date: string; // "YYYY-MM-DD"
   dayIndex: number; // 0, 1, ..., N
-  label: string; // e.g. "Oct 01"
+  label: string; // e.g. "Oct 1"
   idealRemaining: number;
   actualRemaining: number | null;
   forecastRemaining: number | null;
@@ -106,9 +107,9 @@ export function toISODateString(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-/** Formats date for display label, e.g. "Oct 02" */
+/** Formats date for display label, e.g. "Oct 2" */
 export function formatDayLabel(d: Date): string {
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return formatShortDay(d);
 }
 
 /** Generates array of consecutive Date objects between start and end inclusive */

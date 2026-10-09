@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { formatDuration } from "../duration";
+import { formatWeekdayDate } from "@/lib/dates";
 import type { TimesheetWorklogItem } from "../timesheet-service";
 
 interface TimesheetTableProps {
@@ -45,13 +46,7 @@ export function TimesheetTable({ worklogs, workspaceId }: TimesheetTableProps) {
         <tbody className="divide-y divide-rule text-ink">
           {worklogs.map((log) => {
             const initial = log.authorName.charAt(0).toUpperCase();
-            const dateObj = new Date(log.startedAt);
-            const dateFormatted = dateObj.toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            });
+            const dateFormatted = formatWeekdayDate(log.startedAt);
 
             return (
               <tr

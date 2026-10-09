@@ -11,6 +11,7 @@ import { Markdown } from "@/components/ui/markdown";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
+import { formatDate } from "@/lib/dates";
 
 import type { ActivityRecord } from "@/features/activities/activity-service";
 import { ActivityTimeline } from "@/features/activities/components/activity-timeline";
@@ -200,7 +201,7 @@ function TaskCustomFieldInput({
     let displayVal = "—";
     if (value !== null && value !== undefined && value !== "") {
       if (field.type === "Date") {
-        displayVal = new Date(String(value)).toLocaleDateString();
+        displayVal = formatDate(String(value));
       } else if (field.type === "Checkbox") {
         displayVal = value ? "Yes" : "No";
       } else {
@@ -441,11 +442,7 @@ export function TaskDetailModal({
   const assigneeName =
     members.find((m) => m.userId === task.assigneeId)?.name ?? "Unassigned";
   const dueText = task.dueDate
-    ? new Date(task.dueDate).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
+    ? formatDate(task.dueDate)
     : "None";
 
   const currentSprintName =

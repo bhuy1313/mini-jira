@@ -12,14 +12,11 @@ import {
   updateSprintAction,
 } from "@/features/sprints/actions";
 import type { SprintRecord } from "@/features/sprints/sprint-service";
+import { formatDate } from "@/lib/dates";
 
-function formatDate(d: Date | null): string {
+function formatSprintDate(d: Date | null): string {
   if (!d) return "";
-  return new Date(d).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatDate(d);
 }
 
 function SprintRow({
@@ -78,7 +75,7 @@ function SprintRow({
 
   const rangeText =
     sprint.startDate || sprint.endDate
-      ? `${formatDate(sprint.startDate)} — ${formatDate(sprint.endDate)}`
+      ? `${formatSprintDate(sprint.startDate)} — ${formatSprintDate(sprint.endDate)}`
       : null;
 
   return (

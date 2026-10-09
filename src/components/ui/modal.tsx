@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
@@ -17,40 +18,30 @@ export function Modal({
   children: ReactNode;
   panelClassName?: string;
 }) {
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    panelRef.current?.focus();
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={labelledBy}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-[2px]"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
       }}
     >
-      <div
-        ref={panelRef}
-        tabIndex={-1}
-        className={cn(
-          "flex max-h-[90vh] w-full flex-col overflow-hidden rounded-md border border-rule bg-panel text-ink shadow-lg shadow-ink/10 outline-none",
-          panelClassName,
-        )}
-      >
-        {children}
-      </div>
-    </div>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=open]:fade-in data-[state=closed]:animate-out data-[state=closed]:fade-out" />
+        <Dialog.Content
+          aria-labelledby={labelledBy}
+          onOpenAutoFocus={(e) => {
+            // Let Radix focus the first focusable element; prevents
+            // auto-focus scroll jumps on long modal content.
+            if (!labelledBy) e.preventDefault();
+          }}
+          className={cn(
+            "fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-md border border-rule bg-panel text-ink shadow-lg shadow-ink/10 outline-none data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95",
+            panelClassName,
+          )}
+        >
+          {children}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { BellIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
+import { formatRelativeShort } from "@/lib/dates";
 import { startNavigation } from "@/lib/navigation-pending";
 import { useLiveEvents } from "@/features/live/use-live-events";
 import {
@@ -45,15 +46,7 @@ function notificationLabel(n: NotificationRecord): string {
 }
 
 function timeAgo(date: Date): string {
-  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
-  if (seconds < 45) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  return date.toLocaleDateString();
+  return formatRelativeShort(date);
 }
 
 /**

@@ -606,3 +606,5 @@ npm notice run next dev
  GET /api/live/stream?workspaceId=9741e3c4-520d-4116-846a-92625837d0d1 200 in 4.1s (next.js: 16ms, application-code: 4.1s)
  GET /api/live/stream?workspaceId=9741e3c4-520d-4116-846a-92625837d0d1 200 in 420ms (next.js: 26ms, application-code: 395ms)
  GET /api/live/stream?workspaceId=9741e3c4-520d-4116-846a-92625837d0d1 200 in 4.1s (next.js: 46ms, application-code: 4.1s)
+ GET /api/live/stream?workspaceId=ws-acme-eng 200 in 72.3min (next.js: 103ms, application-code: 72.3min)
+ GET /api/live/stream?workspaceId=ws-acme-eng 200 in 72.3min (next.js: 10ms, application-code: 72.3min)

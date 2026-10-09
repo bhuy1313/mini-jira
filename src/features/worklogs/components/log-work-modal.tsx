@@ -52,10 +52,14 @@ export function LogWorkModal({
   // Live parse calculation
   const parsedMinutes = parseDuration(timeSpentText);
 
-  // Default datetime-local string (YYYY-MM-DDTHH:mm)
-  const defaultStartedAt = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
+  // Default datetime-local string (YYYY-MM-DDTHH:mm) — computed once per
+  // mount so render stays pure (react-hooks/purity).
+  const [defaultStartedAt] = useState(
+    () =>
+      new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16),
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {

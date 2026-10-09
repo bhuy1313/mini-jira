@@ -596,12 +596,12 @@ export function KanbanBoard({
 
   const [prevTasks, setPrevTasks] = useState(tasks);
   const [prevStatuses, setPrevStatuses] = useState(statuses);
-  const isDraggingRef = useRef(false);
-  const isMutatingRef = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
   const dragStartContainerRef = useRef<string | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  if (!isMutatingRef.current && !isDraggingRef.current) {
+  if (!isMutating && !isDragging) {
     if (prevTasks !== tasks || prevStatuses !== statuses) {
       setPrevTasks(tasks);
       setPrevStatuses(statuses);
@@ -657,7 +657,7 @@ export function KanbanBoard({
       [status.id]: [...(prev[status.id] ?? []), optimisticTask],
     }));
 
-    isMutatingRef.current = true;
+    setIsMutating(true);
     try {
       const res = await createTaskAction(workspaceId, projectId, formData);
       if (res?.error || !res?.task) {
@@ -691,7 +691,8 @@ export function KanbanBoard({
       setBoardError(error);
       return { error };
     } finally {
-      isMutatingRef.current = false;
+      setIsMutating(false);
+      router.refresh();
     }
   }
 
@@ -721,7 +722,7 @@ export function KanbanBoard({
       };
     });
 
-    isMutatingRef.current = true;
+    setIsMutating(true);
     try {
       const res = await moveTaskAction(workspaceId, projectId, taskId, targetStatusId);
       if (res?.error) {
@@ -730,7 +731,8 @@ export function KanbanBoard({
     } catch {
       setItems(groupByStatus(tasks, statuses));
     } finally {
-      isMutatingRef.current = false;
+      setIsMutating(false);
+      router.refresh();
     }
   }
 
@@ -752,7 +754,7 @@ export function KanbanBoard({
       setSelectedTaskId(null);
     }
 
-    isMutatingRef.current = true;
+    setIsMutating(true);
     try {
       const res = await deleteTaskAction(workspaceId, projectId, taskId);
       if (res?.error) {
@@ -768,7 +770,8 @@ export function KanbanBoard({
       setItems(groupByStatus(tasks, statuses));
       setBoardError("Task could not be deleted.");
     } finally {
-      isMutatingRef.current = false;
+      setIsMutating(false);
+      router.refresh();
     }
   }
 
@@ -781,7 +784,7 @@ export function KanbanBoard({
 
   useLiveEvents(workspaceId, (event) => {
     if (event.kind !== "board" || (event.projectId && event.projectId !== projectId)) return;
-    if (isDraggingRef.current || isMutatingRef.current) return;
+    if (isDragging || isMutating) return;
     if (refreshTimerRef.current !== null) return;
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem(
@@ -883,7 +886,7 @@ export function KanbanBoard({
     const { active, over } = event;
     const sourceContainer = dragStartContainerRef.current;
     dragStartContainerRef.current = null;
-    isDraggingRef.current = false;
+    setIsDragging(false);
 
     if (!over) {
       if (sourceContainer) {
@@ -896,7 +899,7 @@ export function KanbanBoard({
       const targetSprint = String(over.id).replace("sprint-target:", "");
       if (targetSprint !== "all") {
         const sprintValue = targetSprint === "backlog" ? "" : targetSprint;
-        isMutatingRef.current = true;
+        setIsMutating(true);
         try {
           await updateTaskFieldAction(
             workspaceId,
@@ -906,7 +909,7 @@ export function KanbanBoard({
             sprintValue,
           );
         } finally {
-          isMutatingRef.current = false;
+          setIsMutating(false);
           router.refresh();
         }
       }
@@ -936,7 +939,7 @@ export function KanbanBoard({
       targetIndex = currentList.length;
     }
 
-    isMutatingRef.current = true;
+    setIsMutating(true);
     try {
       const res = await moveTaskToIndexAction(
         workspaceId,
@@ -951,7 +954,8 @@ export function KanbanBoard({
     } catch {
       setItems(groupByStatus(tasks, statuses));
     } finally {
-      isMutatingRef.current = false;
+      setIsMutating(false);
+      router.refresh();
     }
   }
 
@@ -965,14 +969,14 @@ export function KanbanBoard({
       sensors={sensors}
       onDragStart={(event) => {
         dragStartContainerRef.current = findContainer(String(event.active.id));
-        isDraggingRef.current = true;
+        setIsDragging(true);
         clearPendingRefresh();
       }}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={() => {
         dragStartContainerRef.current = null;
-        isDraggingRef.current = false;
+        setIsDragging(false);
         clearPendingRefresh();
         setItems(groupByStatus(tasks, statuses));
       }}

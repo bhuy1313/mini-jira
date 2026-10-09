@@ -12,6 +12,7 @@ import {
   type TaskField,
 } from "@/features/authorization/permissions";
 import { insertionPosition } from "@/features/tasks/position";
+import { logger } from "@/lib/logger";
 import type { NotificationPublisher } from "@/features/notifications/notification-service";
 import type { RuleTriggerEvent } from "@/features/automation/automation-types";
 import type { WebhookDispatcher } from "@/features/webhooks/webhook-dispatcher";
@@ -310,7 +311,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
           },
         })
         .catch((err) => {
-          console.error("Rule engine evaluation error on TaskCreated:", err);
+          logger.error({ err }, "Rule engine evaluation error on TaskCreated");
         });
     }
 
@@ -333,7 +334,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
             workspaceId: created.workspaceId,
           },
         })
-        .catch((err) => console.error("Webhook dispatch error on TaskCreated:", err));
+        .catch((err) => logger.error({ err }, "Webhook dispatch error on TaskCreated"));
     }
 
     return created;
@@ -398,7 +399,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
               toStatusId: newStatusId,
             })
             .catch((err) => {
-              console.error("Rule engine evaluation error on StatusChanged:", err);
+              logger.error({ err }, "Rule engine evaluation error on StatusChanged");
             });
         }
         if (webhooks && newStatusId !== oldStatusId) {
@@ -418,7 +419,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
               },
               changes: { field: "status", oldValue: oldName, newValue: newName },
             })
-            .catch((err) => console.error("Webhook dispatch error on StatusChanged:", err));
+            .catch((err) => logger.error({ err }, "Webhook dispatch error on StatusChanged"));
         }
         return updated;
       }
@@ -446,7 +447,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
               toPriority: newPriority,
             })
             .catch((err) => {
-              console.error("Rule engine evaluation error on PriorityChanged:", err);
+              logger.error({ err }, "Rule engine evaluation error on PriorityChanged");
             });
         }
         if (webhooks && newPriority !== oldPriority) {
@@ -465,7 +466,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
               },
               changes: { field: "priority", oldValue: oldPriority, newValue: newPriority },
             })
-            .catch((err) => console.error("Webhook dispatch error on PriorityChanged:", err));
+            .catch((err) => logger.error({ err }, "Webhook dispatch error on PriorityChanged"));
         }
         return updated;
       }
@@ -515,7 +516,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
               },
               changes: { field: "assigneeId", oldValue: task.assigneeId, newValue: resolvedAssigneeId },
             })
-            .catch((err) => console.error("Webhook dispatch error on TaskAssigned:", err));
+            .catch((err) => logger.error({ err }, "Webhook dispatch error on TaskAssigned"));
         }
 
         return updated;
@@ -657,7 +658,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
           toStatusId: newStatusId,
         })
         .catch((err) => {
-          console.error("Rule engine evaluation error on StatusChanged (move):", err);
+          logger.error({ err }, "Rule engine evaluation error on StatusChanged (move)");
         });
     }
 
@@ -678,7 +679,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
           },
           changes: { field: "status", oldValue: oldName, newValue: newName },
         })
-        .catch((err) => console.error("Webhook dispatch error on StatusChanged (move):", err));
+        .catch((err) => logger.error({ err }, "Webhook dispatch error on StatusChanged (move)"));
     }
 
     return updated;
@@ -705,7 +706,7 @@ export function createTaskService({ repo, notifications, ruleEvaluator, webhooks
             projectId: task.projectId,
           },
         })
-        .catch((err) => console.error("Webhook dispatch error on TaskDeleted:", err));
+        .catch((err) => logger.error({ err }, "Webhook dispatch error on TaskDeleted"));
     }
   }
 

@@ -10,6 +10,7 @@ import { canDeleteWorklog, canEditWorklog, type Role } from "@/features/authoriz
 import { ClockIcon, EditIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
+import { formatDateTime } from "@/lib/dates";
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -105,13 +106,7 @@ export function WorklogList({
             const canDelete = canDeleteWorklog(actorRole, isAuthor);
             const authorName = worklog.author?.name ?? "Unknown";
 
-            const formattedDate = new Date(worklog.startedAt).toLocaleDateString(undefined, {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            });
+            const formattedDate = formatDateTime(worklog.startedAt);
 
             return (
               <li

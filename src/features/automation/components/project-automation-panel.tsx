@@ -15,6 +15,7 @@ import {
   toggleRuleAction,
 } from "@/features/automation/actions";
 import { CreateRuleButton } from "@/features/automation/components/create-rule-modal";
+import { formatDateTime } from "@/lib/dates";
 import type {
   AutomationExecutionLogRecord,
   AutomationRuleRecord,
@@ -343,7 +344,7 @@ export function ProjectAutomationPanel({
                         {log.message || "—"}
                       </td>
                       <td className="py-2.5 px-3 text-ink-faint whitespace-nowrap">
-                        {new Date(log.createdAt).toLocaleString()}
+                        {formatDateTime(log.createdAt)}
                       </td>
                     </tr>
                   ))}

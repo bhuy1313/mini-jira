@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { formatTime } from "@/lib/dates";
 import type { WebhookDeliveryLogRecord, WebhookRecord } from "@/features/webhooks/webhook-types";
 
 export function WebhookLogsModal({
@@ -60,7 +61,7 @@ export function WebhookLogsModal({
                   <div className="flex items-center gap-2 text-[11px] text-ink-faint">
                     <span>{log.durationMs}ms</span>
                     <span>•</span>
-                    <span>{new Date(log.createdAt).toLocaleTimeString()}</span>
+                    <span>{formatTime(log.createdAt)}</span>
                   </div>
                 </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ActivityRecord } from "@/features/activities/activity-service";
+import { formatDateTime } from "@/lib/dates";
 
 function formatActivityMessage(activity: ActivityRecord): string {
   const actorName = activity.actor?.name || activity.actor?.email || "Someone";
@@ -51,10 +52,7 @@ export function ActivityTimeline({ activities }: { activities: ActivityRecord[] 
   return (
     <ol className="relative space-y-4 pl-5 before:absolute before:bottom-1 before:left-[5px] before:top-1 before:w-px before:bg-rule">
       {activities.map((activity) => {
-        const formattedDate = new Date(activity.createdAt).toLocaleString(undefined, {
-          dateStyle: "medium",
-          timeStyle: "short",
-        });
+        const formattedDate = formatDateTime(activity.createdAt);
         const actorName = activity.actor?.name || activity.actor?.email || "Someone";
 
         return (

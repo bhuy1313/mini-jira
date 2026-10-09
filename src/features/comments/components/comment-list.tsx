@@ -9,6 +9,7 @@ import type { Role } from "@/features/authorization/permissions";
 import { addCommentAction, deleteCommentAction, updateCommentAction } from "@/features/comments/actions";
 import type { CommentRecord } from "@/features/comments/comment-service";
 import type { MemberWithUser } from "@/features/workspaces/workspace-service";
+import { formatDateTime } from "@/lib/dates";
 
 import { useRouter } from "next/navigation";
 
@@ -61,10 +62,7 @@ function CommentItem({
     {},
   );
 
-  const formattedDate = new Date(comment.createdAt).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const formattedDate = formatDateTime(comment.createdAt);
 
   return (
     <li className="border-b border-rule py-3.5 last:border-0 last:pb-0">

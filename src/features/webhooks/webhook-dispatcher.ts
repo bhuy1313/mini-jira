@@ -1,4 +1,5 @@
 import { createHmac, randomUUID } from "node:crypto";
+import { logger } from "@/lib/logger";
 import { formatWebhookPayload } from "./formatters";
 import type { WebhookRepository } from "./prisma-webhook-repository";
 import type {
@@ -101,7 +102,7 @@ export function createWebhookDispatcher(
           webhooks.map((wh) => this.dispatchToWebhook(wh, ctx)),
         );
       } catch (err) {
-        console.error("Webhook broadcastProjectEvent error:", err);
+        logger.error({ err }, "Webhook broadcastProjectEvent error");
       }
     },
   };

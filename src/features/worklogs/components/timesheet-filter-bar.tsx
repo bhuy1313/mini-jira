@@ -1,6 +1,7 @@
 "use client";
 
 import { DownloadIcon } from "@/components/ui/icons";
+import { formatDate } from "@/lib/dates";
 
 interface TimesheetFilterBarProps {
   workspaceId: string;
@@ -39,10 +40,7 @@ export function TimesheetFilterBar({
   const startObj = new Date(startDate);
   const endObj = new Date(endDate);
 
-  const formatRangeDate = (d: Date) =>
-    d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-  const rangeLabel = `${formatRangeDate(startObj)} – ${formatRangeDate(endObj)}`;
+  const rangeLabel = `${formatDate(startObj)} – ${formatDate(endObj)}`;
 
   // Build CSV export URL
   const exportParams = new URLSearchParams();

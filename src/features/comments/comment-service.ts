@@ -9,6 +9,7 @@ import {
 } from "@/features/authorization/permissions";
 import type { NotificationPublisher } from "@/features/notifications/notification-service";
 import type { WebhookDispatcher } from "@/features/webhooks/webhook-dispatcher";
+import { logger } from "@/lib/logger";
 
 export interface CommentAuthorInfo {
   id: string;
@@ -150,7 +151,7 @@ export function createCommentService({ repo, notifications, webhooks }: Deps) {
             content: created.content,
           },
         })
-        .catch((err) => console.error("Webhook dispatch error on NewComment:", err));
+        .catch((err) => logger.error({ err }, "Webhook dispatch error on NewComment"));
     }
 
     return created;

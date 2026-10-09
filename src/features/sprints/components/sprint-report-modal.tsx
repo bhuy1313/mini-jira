@@ -11,6 +11,7 @@ import {
   UsersIcon,
 } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
+import { formatDate } from "@/lib/dates";
 import { formatDuration } from "@/features/worklogs/duration";
 import { getSprintReportAction } from "@/features/sprints/actions";
 import type {
@@ -230,8 +231,8 @@ export function SprintReportModal({
                   {data.hasDates && data.startDate && data.endDate ? (
                     <span className="inline-flex items-center gap-1.5 text-xs text-ink-soft">
                       <CalendarIcon className="size-3.5 text-ink-faint" />
-                      {new Date(data.startDate).toLocaleDateString()} –{" "}
-                      {new Date(data.endDate).toLocaleDateString()}
+                      {formatDate(data.startDate)} –{" "}
+                      {formatDate(data.endDate)}
                     </span>
                   ) : null}
                 </div>

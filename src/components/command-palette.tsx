@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { Command } from "cmdk";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/theme/theme-provider";
 import {
@@ -26,26 +27,35 @@ interface CommandItem {
   shortcut?: string;
 }
 
+/** Map phím thứ hai của leader-key "g …" sang shortcut hiển thị "G X". */
+const LEADER_SHORTCUTS: Record<string, string> = {
+  w: "G W",
+  a: "G A",
+  p: "G P",
+  m: "G M",
+  v: "G V",
+  s: "G S",
+};
+
+const LEADER_WINDOW_MS = 900;
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target.isContentEditable
+  );
+}
+
 export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const leaderAtRef = useRef<number>(0);
   const router = useRouter();
   const { setTheme } = useTheme();
-
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setOpen((prev) => !prev);
-      }
-      if (e.key === "Escape" && open) {
-        setOpen(false);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
 
   const items: CommandItem[] = useMemo(() => {
     const list: CommandItem[] = [
@@ -149,38 +159,56 @@ export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
     return list;
   }, [workspaceId, router, setTheme]);
 
-  const filteredItems = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) =>
-      item.title.toLowerCase().includes(q) || item.category.toLowerCase().includes(q)
-    );
-  }, [items, query]);
-
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (filteredItems.length === 0) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev + 1) % filteredItems.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      const current = filteredItems[selectedIndex];
-      if (current) {
-        current.perform();
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setOpen((prev) => !prev);
+        return;
+      }
+      if (e.key === "Escape" && open) {
         setOpen(false);
+        return;
+      }
+      // Leader-key "g" + chữ cái (vd. "g w" = Go to Workspaces).
+      // Bỏ qua khi đang gõ trong input để không cướp phím.
+      if (
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !isTypingTarget(e.target)
+      ) {
+        const key = e.key.toLowerCase();
+        if (key === "g") {
+          leaderAtRef.current = Date.now();
+          return;
+        }
+        const shortcut = LEADER_SHORTCUTS[key];
+        if (shortcut && Date.now() - leaderAtRef.current < LEADER_WINDOW_MS) {
+          const target = items.find((item) => item.shortcut === shortcut);
+          leaderAtRef.current = 0;
+          if (target) {
+            target.perform();
+            setOpen(false);
+          }
+        } else {
+          leaderAtRef.current = 0;
+        }
       }
     }
-  };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, items]);
+
+  function runItem(item: CommandItem) {
+    item.perform();
+    setOpen(false);
+  }
 
   if (!open) return null;
+
+  const navigationItems = items.filter((i) => i.category === "Navigation");
+  const themeItems = items.filter((i) => i.category === "Theme");
 
   return (
     <div
@@ -192,14 +220,16 @@ export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
         if (e.target === e.currentTarget) setOpen(false);
       }}
     >
-      <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-xl border border-rule bg-panel text-ink shadow-2xl animate-in zoom-in-95 duration-150">
+      <Command
+        label="Command palette"
+        className="flex w-full max-w-lg flex-col overflow-hidden rounded-xl border border-rule bg-panel text-ink shadow-2xl animate-in zoom-in-95 duration-150"
+      >
         <div className="flex items-center border-b border-rule px-4 py-3">
           <SearchIcon className="size-4 shrink-0 text-ink-faint mr-2.5" />
-          <input
+          <Command.Input
             autoFocus
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onValueChange={setQuery}
             placeholder="Type a command or search destination... (e.g. projects, account)"
             className="w-full bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none"
           />
@@ -213,47 +243,54 @@ export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
           </button>
         </div>
 
-        <div className="max-h-72 overflow-y-auto p-2">
-          {filteredItems.length === 0 ? (
+        <Command.List className="max-h-72 overflow-y-auto p-2">
+          <Command.Empty>
             <div className="p-6 text-center text-xs text-ink-faint">
               No matching commands found.
             </div>
-          ) : (
-            <ul className="space-y-1">
-              {filteredItems.map((item, idx) => {
-                const isSelected = idx === selectedIndex;
-                return (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        item.perform();
-                        setOpen(false);
-                      }}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                      className={cn(
-                        "flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors",
-                        isSelected
-                          ? "bg-primary-soft text-primary-ink"
-                          : "text-ink hover:bg-paper",
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        {item.icon}
-                        <span>{item.title}</span>
-                      </div>
-                      {item.shortcut ? (
-                        <kbd className="rounded border border-rule bg-paper px-1.5 py-0.5 text-[10px] font-mono text-ink-faint">
-                          {item.shortcut}
-                        </kbd>
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
+          </Command.Empty>
+          <Command.Group heading="Navigation" className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-ink-faint [&_[cmdk-group-heading]]:px-1 [&_[cmdk-group-heading]]:py-1">
+            {navigationItems.map((item) => (
+              <Command.Item
+                key={item.id}
+                value={`${item.title} ${item.category} ${item.shortcut ?? ""}`}
+                onSelect={() => runItem(item)}
+                className={cn(
+                  "flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                  "text-ink data-[selected=true]:bg-primary-soft data-[selected=true]:text-primary-ink",
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  {item.icon}
+                  <span>{item.title}</span>
+                </div>
+                {item.shortcut ? (
+                  <kbd className="rounded border border-rule bg-paper px-1.5 py-0.5 text-[10px] font-mono text-ink-faint">
+                    {item.shortcut}
+                  </kbd>
+                ) : null}
+              </Command.Item>
+            ))}
+          </Command.Group>
+          <Command.Group heading="Theme" className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-ink-faint [&_[cmdk-group-heading]]:px-1 [&_[cmdk-group-heading]]:py-1">
+            {themeItems.map((item) => (
+              <Command.Item
+                key={item.id}
+                value={`${item.title} ${item.category}`}
+                onSelect={() => runItem(item)}
+                className={cn(
+                  "flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                  "text-ink data-[selected=true]:bg-primary-soft data-[selected=true]:text-primary-ink",
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  {item.icon}
+                  <span>{item.title}</span>
+                </div>
+              </Command.Item>
+            ))}
+          </Command.Group>
+        </Command.List>
 
         <div className="flex items-center justify-between border-t border-rule bg-paper/50 px-4 py-2 text-[11px] text-ink-faint">
           <div className="flex items-center gap-2">
@@ -268,7 +305,7 @@ export function CommandPalette({ workspaceId }: { workspaceId?: string }) {
             <kbd className="ml-1 rounded bg-paper px-1 border border-rule">Esc</kbd>
           </div>
         </div>
-      </div>
+      </Command>
     </div>
   );
 }

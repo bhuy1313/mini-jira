@@ -10,6 +10,7 @@ import {
   deleteAttachmentAction,
 } from "@/features/attachments/actions";
 import type { AttachmentRecord } from "@/features/attachments/attachment-service";
+import { formatDate } from "@/lib/dates";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -54,7 +55,7 @@ function AttachmentRow({
           <span aria-hidden>·</span>
           <span>{attachment.user?.name || attachment.user?.email || "Workspace Member"}</span>
           <span aria-hidden>·</span>
-          <time>{new Date(attachment.createdAt).toLocaleDateString()}</time>
+          <time>{formatDate(attachment.createdAt)}</time>
         </p>
         {deleteState.error ? (
           <p role="alert" className="mt-1 text-xs text-danger">

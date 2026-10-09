@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -9,6 +10,7 @@ import { Panel } from "@/components/ui/panel";
 import { Spinner } from "@/components/ui/spinner";
 import { TrashIcon } from "@/components/ui/icons";
 import type { ApiKeyRecord } from "@/features/api-keys/api-key-service";
+import { formatDate } from "@/lib/dates";
 import { deleteApiKeyAction } from "@/features/api-keys/actions";
 import { CreateApiKeyButton } from "@/features/api-keys/components/create-api-key-modal";
 
@@ -36,6 +38,7 @@ export function WorkspaceApiKeysPanel({
   function handleKeyGenerated(keyName: string, secretKey: string) {
     setCreatedKeyName(keyName);
     setNewSecretKey(secretKey);
+    toast.success(`API key "${keyName}" created`);
   }
 
   function handleDelete(keyId: string) {
@@ -48,8 +51,9 @@ export function WorkspaceApiKeysPanel({
       const res = await deleteApiKeyAction(workspaceId, keyId);
       setDeletingId(null);
       if (res.error) {
-        alert(res.error);
+        toast.error(res.error);
       } else {
+        toast.success("API key revoked");
         router.refresh();
       }
     });
@@ -60,6 +64,7 @@ export function WorkspaceApiKeysPanel({
     try {
       await navigator.clipboard.writeText(newSecretKey);
       setCopied(true);
+      toast.success("Secret key copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback
@@ -70,6 +75,7 @@ export function WorkspaceApiKeysPanel({
       document.execCommand("copy");
       document.body.removeChild(textarea);
       setCopied(true);
+      toast.success("Secret key copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     }
   }
@@ -126,7 +132,7 @@ export function WorkspaceApiKeysPanel({
                     {key.user?.name || key.userId}
                   </td>
                   <td className="px-4 py-3 text-xs text-ink-soft">
-                    {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : "Never"}
+                    {key.lastUsedAt ? formatDate(key.lastUsedAt) : "Never"}
                   </td>
                   <td className="px-4 py-3 text-xs text-ink-soft">
                     {key.expiresAt ? (
@@ -137,14 +143,14 @@ export function WorkspaceApiKeysPanel({
                             : ""
                         }
                       >
-                        {new Date(key.expiresAt).toLocaleDateString()}
+                        {formatDate(key.expiresAt)}
                       </span>
                     ) : (
                       "Never"
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs text-ink-soft">
-                    {new Date(key.createdAt).toLocaleDateString()}
+                    {formatDate(key.createdAt)}
                   </td>
                   {canManage && (
                     <td className="px-4 py-3 text-right">
