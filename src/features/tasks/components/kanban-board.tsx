@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
+import { resolveRealTaskId, trackPendingTask } from "@/features/tasks/pending-task-ids";
 
 import type { ActivityRecord } from "@/features/activities/activity-service";
 import type { AttachmentRecord } from "@/features/attachments/attachment-service";
@@ -171,6 +172,7 @@ function SortableTaskCard({
   onOpenDetail,
   onMoveStatus,
   onDeleteTask,
+  onRenameTask,
 }: {
   task: TaskRecord;
   statuses: StatusRecord[];
@@ -186,6 +188,7 @@ function SortableTaskCard({
   onOpenDetail: () => void;
   onMoveStatus: (taskId: string, statusId: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onRenameTask: (taskId: string, title: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.id, disabled: !canMove });
@@ -193,7 +196,8 @@ function SortableTaskCard({
   const [titleState, titleAction, titlePending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
       const value = String(formData.get("title") || "");
-      return updateTaskFieldAction(workspaceId, projectId, task.id, "title", value);
+      const realId = await resolveRealTaskId(task.id);
+      return updateTaskFieldAction(workspaceId, projectId, realId, "title", value);
     },
     {},
   );
@@ -229,6 +233,12 @@ function SortableTaskCard({
           {canEditTitle ? (
             <form
               action={titleAction}
+              onSubmit={(e) => {
+                // Optimistic rename: reflect the new title instantly so the
+                // card (keyed by title) remounts even if server props lag.
+                const next = String(new FormData(e.currentTarget).get("title") ?? "").trim();
+                if (next) onRenameTask(task.id, next);
+              }}
               className="flex min-w-0 flex-1 items-center gap-1.5"
             >
               <input
@@ -443,6 +453,7 @@ function ColumnDroppable({
   onOpenDetail,
   onMoveStatus,
   onDeleteTask,
+  onRenameTask,
 }: {
   id: string;
   status: StatusRecord;
@@ -459,6 +470,7 @@ function ColumnDroppable({
   onOpenDetail: (task: TaskRecord) => void;
   onMoveStatus: (taskId: string, statusId: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onRenameTask: (taskId: string, title: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   const canDelete = canDeleteTask(actorRole);
@@ -533,6 +545,7 @@ function ColumnDroppable({
                   onOpenDetail={() => onOpenDetail(t)}
                   onMoveStatus={onMoveStatus}
                   onDeleteTask={onDeleteTask}
+                  onRenameTask={onRenameTask}
                 />
               );
             })}
@@ -658,9 +671,17 @@ export function KanbanBoard({
     }));
 
     setIsMutating(true);
+    let resolveCreate!: (id: string | null) => void;
+    trackPendingTask(
+      tempId,
+      new Promise<string | null>((r) => {
+        resolveCreate = r;
+      }),
+    );
     try {
       const res = await createTaskAction(workspaceId, projectId, formData);
       if (res?.error || !res?.task) {
+        resolveCreate(null);
         setItems((prev) => ({
           ...prev,
           [status.id]: (prev[status.id] ?? []).filter((t) => t.id !== tempId),
@@ -671,6 +692,8 @@ export function KanbanBoard({
       }
 
       const createdTask = res.task;
+      resolveCreate(createdTask.id);
+      setSelectedTaskId((prev) => (prev === tempId ? createdTask.id : prev));
       setItems((prev) => {
         const next: Record<string, TaskRecord[]> = {};
         for (const [key, list] of Object.entries(prev)) {
@@ -683,6 +706,7 @@ export function KanbanBoard({
       });
       return {};
     } catch {
+      resolveCreate(null);
       setItems((prev) => ({
         ...prev,
         [status.id]: (prev[status.id] ?? []).filter((t) => t.id !== tempId),
@@ -696,17 +720,59 @@ export function KanbanBoard({
     }
   }
 
-  async function handleMoveStatus(taskId: string, targetStatusId: string) {
-    const sourceStatusId = findContainer(taskId);
-    if (!sourceStatusId || sourceStatusId === targetStatusId) return;
+  /** Optimistic patch on card title submit — the server action (form
+   * `action`) persists it; this makes the new title (and input remount
+   * via `key={task.title}`) visible instantly even if server props lag. */
+  function handleRenameTask(taskId: string, title: string) {
+    const next = title.trim();
+    if (!next) return;
+    setItems((prev) => {
+      const nextItems: Record<string, TaskRecord[]> = {};
+      for (const [key, list] of Object.entries(prev)) {
+        nextItems[key] = list.map((t) =>
+          t.id === taskId ? { ...t, title: next } : t,
+        );
+      }
+      return nextItems;
+    });
+  }
+
+  /** Optimistic patch for drawer field edits (assignee/priority/due/sprint)
+   * so the board card reflects them instantly. Keyed by the id the drawer
+   * was opened with (temp ids included) — server reconciliation follows. */
+  function handlePatchTask(taskId: string, patch: Partial<TaskRecord>) {
+    setItems((prev) => {
+      const nextItems: Record<string, TaskRecord[]> = {};
+      for (const [key, list] of Object.entries(prev)) {
+        nextItems[key] = list.map((t) =>
+          t.id === taskId ? { ...t, ...patch } : t,
+        );
+      }
+      return nextItems;
+    });
+  }
+
+  async function handleMoveStatus(taskId: string, targetStatusId: string) {    // Await the real id when the card is still optimistic (rapid
+    // create-then-move) — the server rejects temp ids.
+    setIsMutating(true);
+    const realId = await resolveRealTaskId(taskId);
+    const sourceStatusId =
+      findContainer(realId) ?? (realId !== taskId ? findContainer(taskId) : null);
+    if (!sourceStatusId || sourceStatusId === targetStatusId) {
+      setIsMutating(false);
+      return;
+    }
 
     const targetStatus = statuses.find((s) => s.id === targetStatusId);
 
-    // Instant optimistic update (0ms UI transition)
+    // Instant optimistic update (0ms UI transition). Match by real id,
+    // falling back to the temp id when the create swap hasn't flushed yet.
+    const matchesTarget = (t: TaskRecord) =>
+      t.id === realId || (realId !== taskId && t.id === taskId);
     setItems((prev) => {
       const sourceList = [...(prev[sourceStatusId] ?? [])];
       const targetList = [...(prev[targetStatusId] ?? [])];
-      const idx = sourceList.findIndex((t) => t.id === taskId);
+      const idx = sourceList.findIndex(matchesTarget);
       if (idx < 0) return prev;
       const [taskToMove] = sourceList.splice(idx, 1);
       const updatedTask: TaskRecord = {
@@ -722,9 +788,8 @@ export function KanbanBoard({
       };
     });
 
-    setIsMutating(true);
     try {
-      const res = await moveTaskAction(workspaceId, projectId, taskId, targetStatusId);
+      const res = await moveTaskAction(workspaceId, projectId, realId, targetStatusId);
       if (res?.error) {
         setItems(groupByStatus(tasks, statuses));
       }
@@ -737,33 +802,42 @@ export function KanbanBoard({
   }
 
   async function handleDeleteTask(taskId: string) {
-    const containerId = findContainer(taskId);
-    if (!containerId) return;
+    setIsMutating(true);
+    const realId = await resolveRealTaskId(taskId);
+    const containerId =
+      findContainer(realId) ?? (realId !== taskId ? findContainer(taskId) : null);
+    if (!containerId) {
+      setIsMutating(false);
+      return;
+    }
     setBoardError(null);
 
     // Instant optimistic deletion (0ms UI removal)
     setItems((prev) => {
-      const list = (prev[containerId] ?? []).filter((t) => t.id !== taskId);
+      const list = (prev[containerId] ?? []).filter(
+        (t) => t.id !== realId && t.id !== taskId,
+      );
       return {
         ...prev,
         [containerId]: list,
       };
     });
 
-    if (selectedTaskId === taskId) {
+    if (selectedTaskId === taskId || selectedTaskId === realId) {
       setSelectedTaskId(null);
     }
 
-    setIsMutating(true);
     try {
-      const res = await deleteTaskAction(workspaceId, projectId, taskId);
+      const res = await deleteTaskAction(workspaceId, projectId, realId);
       if (res?.error) {
         setItems(groupByStatus(tasks, statuses));
         setBoardError(res.error);
       } else {
         setItems((prev) => ({
           ...prev,
-          [containerId]: (prev[containerId] ?? []).filter((task) => task.id !== taskId),
+          [containerId]: (prev[containerId] ?? []).filter(
+            (task) => task.id !== realId && task.id !== taskId,
+          ),
         }));
       }
     } catch {
@@ -895,16 +969,19 @@ export function KanbanBoard({
       return;
     }
 
+    // Resolve optimistic temp ids (rapid create-then-drag) before any server call.
+    setIsMutating(true);
+    const activeTaskId = await resolveRealTaskId(String(active.id));
+
     if (String(over.id).startsWith("sprint-target:")) {
       const targetSprint = String(over.id).replace("sprint-target:", "");
       if (targetSprint !== "all") {
         const sprintValue = targetSprint === "backlog" ? "" : targetSprint;
-        setIsMutating(true);
         try {
           await updateTaskFieldAction(
             workspaceId,
             projectId,
-            String(active.id),
+            activeTaskId,
             "sprintId",
             sprintValue,
           );
@@ -912,16 +989,23 @@ export function KanbanBoard({
           setIsMutating(false);
           router.refresh();
         }
+      } else {
+        setIsMutating(false);
       }
       return;
     }
 
-    const activeTaskId = String(active.id);
-    const targetContainer = findContainer(activeTaskId);
-    if (!targetContainer) return;
+    const targetContainer =
+      findContainer(activeTaskId) ?? findContainer(String(active.id));
+    if (!targetContainer) {
+      setIsMutating(false);
+      return;
+    }
 
     const currentList = items[targetContainer] ?? [];
-    let targetIndex = currentList.findIndex((t) => t.id === activeTaskId);
+    let targetIndex = currentList.findIndex(
+      (t) => t.id === activeTaskId || t.id === String(active.id),
+    );
 
     // If dropped directly onto another task card within the target container, reorder
     if (over.id !== active.id) {
@@ -939,7 +1023,6 @@ export function KanbanBoard({
       targetIndex = currentList.length;
     }
 
-    setIsMutating(true);
     try {
       const res = await moveTaskToIndexAction(
         workspaceId,
@@ -1059,6 +1142,7 @@ export function KanbanBoard({
                 onOpenDetail={(task) => setSelectedTaskId(task.id)}
                 onMoveStatus={handleMoveStatus}
                 onDeleteTask={handleDeleteTask}
+                onRenameTask={handleRenameTask}
               />
             ))}
           </div>
@@ -1084,6 +1168,7 @@ export function KanbanBoard({
           actorUserId={actorUserId}
           onClose={() => setSelectedTaskId(null)}
           onStatusChange={(newStatusId) => handleMoveStatus(selectedTask.id, newStatusId)}
+          onTaskPatch={handlePatchTask}
         />
       ) : null}
 

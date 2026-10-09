@@ -11,6 +11,7 @@ import { Markdown } from "@/components/ui/markdown";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
+import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
 import { formatDate } from "@/lib/dates";
 
 import type { ActivityRecord } from "@/features/activities/activity-service";
@@ -351,6 +352,7 @@ export function TaskDetailModal({
   actorUserId,
   onClose,
   onStatusChange,
+  onTaskPatch,
 }: {
   task: TaskRecord;
   workspaceId: string;
@@ -370,6 +372,7 @@ export function TaskDetailModal({
   actorUserId: string;
   onClose: () => void;
   onStatusChange?: (statusId: string) => void;
+  onTaskPatch?: (taskId: string, patch: Partial<TaskRecord>) => void;
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"comments" | "activities" | "attachments" | "labels" | "worklogs">("comments");
@@ -395,7 +398,8 @@ export function TaskDetailModal({
   const [titleState, titleAction, titlePending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
       const value = String(formData.get("title") || "");
-      return updateTaskFieldAction(workspaceId, projectId, task.id, "title", value);
+      const realId = await resolveRealTaskId(task.id);
+      return updateTaskFieldAction(workspaceId, projectId, realId, "title", value);
     },
     {},
   );
@@ -403,26 +407,41 @@ export function TaskDetailModal({
   const [descState, descAction, descPending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
       const value = String(formData.get("description") || "");
-      return updateTaskFieldAction(workspaceId, projectId, task.id, "description", value);
+      const realId = await resolveRealTaskId(task.id);
+      return updateTaskFieldAction(workspaceId, projectId, realId, "description", value);
     },
     {},
   );
 
   const titleRef = useRef<HTMLInputElement>(null);
   async function saveField(field: TaskField, value: string) {
+    const realId = await resolveRealTaskId(task.id);
     if (field === "status" && onStatusChange) {
       onStatusChange(value);
+      return;
     }
-    await updateTaskFieldAction(workspaceId, projectId, task.id, field, value);
+    // Optimistic patch so the board card reflects the change instantly
+    // even if server props lag behind.
+    if (field === "assigneeId") {
+      onTaskPatch?.(task.id, { assigneeId: value || null });
+    } else if (field === "priority") {
+      onTaskPatch?.(task.id, { priority: value as TaskRecord["priority"] });
+    } else if (field === "dueDate") {
+      onTaskPatch?.(task.id, { dueDate: value ? new Date(`${value}T00:00:00`) : null });
+    } else if (field === "sprintId") {
+      onTaskPatch?.(task.id, { sprintId: value || null });
+    }
+    await updateTaskFieldAction(workspaceId, projectId, realId, field, value);
     router.refresh();
   }
 
   async function handleSaveCustomField(fieldId: string, val: unknown) {
     setCustomFieldError(null);
+    const realId = await resolveRealTaskId(task.id);
     const res = await setTaskCustomFieldValueAction(
       workspaceId,
       projectId,
-      task.id,
+      realId,
       fieldId,
       val,
     );
