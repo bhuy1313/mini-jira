@@ -1,8 +1,11 @@
 import { BoardsIcon } from "@/components/ui/icons";
+import type { Metadata } from "next";
 import { canCreateProject } from "@/features/authorization/permissions";
 import { CreateProjectButton } from "@/features/projects/components/create-project-modal";
 import { ProjectList } from "@/features/projects/components/project-list";
 import { getWorkspaceProjectLists } from "@/features/projects/queries";
+
+export const metadata: Metadata = { title: "Projects" };
 
 export default async function WorkspaceProjectsPage({
   params,

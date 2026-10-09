@@ -1,9 +1,12 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { AuthShell } from "@/features/auth/components/auth-shell";
 import { AuthSwitcher } from "@/features/auth/components/auth-switcher";
 import { auth } from "@/lib/auth";
+
+export const metadata: Metadata = { title: "Sign in" };
 
 export default async function AuthPage() {
   const session = await auth.api.getSession({

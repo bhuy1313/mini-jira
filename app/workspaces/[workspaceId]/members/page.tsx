@@ -1,8 +1,11 @@
 import { UsersIcon } from "@/components/ui/icons";
+import type { Metadata } from "next";
 import { InviteMemberButton } from "@/features/workspaces/components/invite-member-modal";
 import { MembersList } from "@/features/workspaces/components/members-list";
 import { canAddMember } from "@/features/authorization/permissions";
 import { getWorkspaceContext, getWorkspaceMembers } from "@/features/workspaces/queries";
+
+export const metadata: Metadata = { title: "Members" };
 
 export default async function WorkspaceMembersPage({
   params,

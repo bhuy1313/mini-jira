@@ -1,10 +1,13 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { ThemeQuickToggle } from "@/components/theme/theme-toggle";
 import { UserMenu } from "@/features/workspaces/components/user-menu";
 import { WorkspaceSwitcher } from "@/features/workspaces/components/workspace-switcher";
 import { getUserWorkspaces } from "@/features/workspaces/queries";
 import { getSessionUser } from "@/features/workspaces/session";
+
+export const metadata: Metadata = { title: "Workspaces" };
 
 export default async function WorkspacesPage() {
   const [workspaces, user] = await Promise.all([

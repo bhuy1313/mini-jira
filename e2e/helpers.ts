@@ -44,8 +44,26 @@ export async function cleanupUsers(emails: string[]): Promise<void> {
   if (emails.length === 0) return;
   const p = await pool();
   try {
-    // Delete tasks created by these users first (creator FK is RESTRICT); this also
-    // cascades their comments/activity. Then the user rows can be removed.
+    // RESTRICT guards referencing "user": comment/worklog/activity authors and
+    // attachment uploaders survive task deletion, so remove those rows first.
+    // Then delete tasks created by these users (creator FK is RESTRICT; this
+    // also cascades their comments/activity). Then the user rows can go.
+    await p.query(
+      'DELETE FROM "comment" WHERE "authorId" IN (SELECT "id" FROM "user" WHERE "email" = ANY($1::text[]))',
+      [emails],
+    );
+    await p.query(
+      'DELETE FROM "worklog" WHERE "authorId" IN (SELECT "id" FROM "user" WHERE "email" = ANY($1::text[]))',
+      [emails],
+    );
+    await p.query(
+      'DELETE FROM "activity" WHERE "actorId" IN (SELECT "id" FROM "user" WHERE "email" = ANY($1::text[]))',
+      [emails],
+    );
+    await p.query(
+      'DELETE FROM "attachment" WHERE "userId" IN (SELECT "id" FROM "user" WHERE "email" = ANY($1::text[]))',
+      [emails],
+    );
     await p.query(
       'DELETE FROM "task" WHERE "creatorId" IN (SELECT "id" FROM "user" WHERE "email" = ANY($1::text[]))',
       [emails],

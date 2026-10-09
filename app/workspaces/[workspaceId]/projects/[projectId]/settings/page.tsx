@@ -1,4 +1,5 @@
 import { Panel } from "@/components/ui/panel";
+import type { Metadata } from "next";
 import { canPermanentlyDeleteProject, canUpdateProject } from "@/features/authorization/permissions";
 import { DeleteProjectButton } from "@/features/projects/components/delete-project-button";
 import { ProjectSettingsForm } from "@/features/projects/components/project-settings-form";
@@ -11,6 +12,8 @@ import { ProjectWebhooksPanel } from "@/features/webhooks/components/project-web
 import { getProjectSettingsData } from "@/features/projects/queries";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Project settings" };
 
 export default async function ProjectSettingsPage({
   params,

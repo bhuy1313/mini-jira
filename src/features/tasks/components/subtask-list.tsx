@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
 import { createSubtaskAction, toggleSubtaskDoneAction, unlinkSubtaskAction } from "@/features/tasks/actions";
-import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
+import { resolveRealTaskId, trackPendingTask } from "@/features/tasks/pending-task-ids";
 import type { SubtaskSummary } from "@/features/tasks/task-service";
 import type { MemberWithUser } from "@/features/workspaces/workspace-service";
 
@@ -59,10 +59,11 @@ export function SubtaskList({
       ),
     );
     startTransition(async () => {
+      // Await the real id when toggling a just-created (optimistic) subtask.
       const res = await toggleSubtaskDoneAction(
         workspaceId,
         projectId,
-        subtaskId,
+        await resolveRealTaskId(subtaskId),
         !currentDone,
       );
       if (res.error) {
@@ -79,7 +80,12 @@ export function SubtaskList({
     setError(null);
     setLocalSubtasks((prev) => prev.filter((st) => st.id !== subtaskId));
     startTransition(async () => {
-      const res = await unlinkSubtaskAction(workspaceId, projectId, subtaskId);
+      // Await the real id when unlinking a just-created (optimistic) subtask.
+      const res = await unlinkSubtaskAction(
+        workspaceId,
+        projectId,
+        await resolveRealTaskId(subtaskId),
+      );
       if (res.error) {
         setError(res.error);
         setLocalSubtasks(initialSubtasks);
@@ -110,6 +116,14 @@ export function SubtaskList({
     setNewAssigneeId("");
     setIsAdding(false);
 
+    let resolveCreate!: (id: string | null) => void;
+    trackPendingTask(
+      tempId,
+      new Promise<string | null>((r) => {
+        resolveCreate = r;
+      }),
+    );
+
     startTransition(async () => {
       const formData = new FormData();
       formData.set("title", title);
@@ -125,10 +139,12 @@ export function SubtaskList({
         formData,
       );
 
-      if (res.error) {
-        setError(res.error);
+      if (res.error || !res.task) {
+        resolveCreate(null);
+        setError(res.error ?? "Sub-task could not be created.");
         setLocalSubtasks(initialSubtasks);
       } else {
+        resolveCreate(res.task.id);
         router.refresh();
       }
     });

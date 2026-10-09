@@ -1,4 +1,5 @@
 import { SettingsIcon } from "@/components/ui/icons";
+import type { Metadata } from "next";
 import { DeleteWorkspaceButton } from "@/features/workspaces/components/delete-workspace-button";
 import { SettingsForm } from "@/features/workspaces/components/settings-form";
 import {
@@ -9,6 +10,8 @@ import {
 import { getWorkspaceSettings } from "@/features/workspaces/queries";
 import { WorkspaceApiKeysPanel } from "@/features/api-keys/components/workspace-api-keys-panel";
 import { listWorkspaceApiKeys } from "@/features/api-keys/queries";
+
+export const metadata: Metadata = { title: "Workspace settings" };
 
 export default async function WorkspaceSettingsPage({
   params,

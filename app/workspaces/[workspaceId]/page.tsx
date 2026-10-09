@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
@@ -14,6 +15,8 @@ import { createProjectService } from "@/features/projects/project-service";
 import { prismaProjectRepository } from "@/features/projects/prisma-project-repository";
 import { getWorkspaceContext, getWorkspaceMembers } from "@/features/workspaces/queries";
 import { requireActor } from "@/features/workspaces/session";
+
+export const metadata: Metadata = { title: "Workspace overview" };
 import { WorkspaceAvatar } from "@/features/workspaces/components/workspace-avatar";
 import { cn } from "@/lib/cn";
 

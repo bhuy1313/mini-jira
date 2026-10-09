@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,8 @@ import { getProjectDetail } from "@/features/projects/queries";
 import { KanbanBoard } from "@/features/tasks/components/kanban-board";
 import { getProjectBoard } from "@/features/tasks/queries";
 import type { TaskFilterInput } from "@/features/tasks/task-service";
+
+export const metadata: Metadata = { title: "Project board" };
 
 const searchParamsSchema = z.object({
   q: z.string().trim().optional(),
