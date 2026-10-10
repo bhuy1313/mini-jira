@@ -10,5 +10,9 @@ export default defineConfig({
   },
   datasource: {
     url: process.env["DATABASE_URL"],
+    // Shadow DB cho `migrate dev`/`migrate diff` (không bao giờ chạy app với URL này).
+    shadowDatabaseUrl:
+      process.env["SHADOW_DATABASE_URL"] ??
+      "postgresql://postgres:postgres@localhost:5432/mini_jira_shadow?schema=public",
   },
 });
