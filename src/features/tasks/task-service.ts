@@ -71,6 +71,27 @@ export interface TaskFilterInput {
   labelId?: string;
   /** Mốc 15: lọc theo sprint. "backlog" = task chưa thuộc sprint nào. */
   sprintId?: string | "backlog";
+  /**
+   * Giới hạn số task repo trả về. Board luôn set để cột không phình vô hạn;
+   * caller phát hiện cắt cụt bằng cách xin limit+1 rồi dùng applyBoardLimit.
+   */
+  limit?: number;
+}
+
+/**
+ * Safety cap cho board: đủ lớn để board thực tế không bao giờ chạm, đủ nhỏ
+ * để một project bệnh hoạn không kéo sập page. Pagination UX thật
+ * (virtualize/load-more từng cột) để dành khi có số liệu cần.
+ */
+export const BOARD_TASK_LIMIT = 500;
+
+/** Cắt tasks về limit, báo truncated để UI hiện banner thay vì mất lặng lẽ. */
+export function applyBoardLimit(
+  tasks: TaskRecord[],
+  limit: number = BOARD_TASK_LIMIT,
+): { tasks: TaskRecord[]; truncated: boolean } {
+  if (tasks.length <= limit) return { tasks, truncated: false };
+  return { tasks: tasks.slice(0, limit), truncated: true };
 }
 
 export interface TaskActivityInput {

@@ -26,6 +26,8 @@ import { prismaWorklogRepository } from "@/features/worklogs/prisma-worklog-repo
 import type { WorklogRecord } from "@/features/worklogs/worklog-service";
 import { prismaTaskRepository } from "@/features/tasks/prisma-task-repository";
 import {
+  applyBoardLimit,
+  BOARD_TASK_LIMIT,
   createTaskService,
   type TaskFilterInput,
   type TaskRecord,
@@ -47,6 +49,8 @@ export interface ProjectBoardData {
   sprintTotals: Record<string, number>;
   sprintDoneTotals: Record<string, number>;
   tasks: TaskRecord[];
+  /** True khi board vượt BOARD_TASK_LIMIT và đã bị cắt — UI hiện banner. */
+  tasksTruncated: boolean;
   members: MemberWithUser[];
   commentsByTask: Record<string, CommentRecord[]>;
   activitiesByTask: Record<string, ActivityRecord[]>;
@@ -73,7 +77,8 @@ export const getProjectBoard = cache(async (
 
   const [rawTasks, members, statuses, sprints, sprintTotals, sprintDoneTotals, customFields] =
   await Promise.all([
-    taskService.listBoard(actor, projectId, filter),
+    // Xin thừa 1 row để biết có bị cắt cụt mà không cần thêm query count.
+    taskService.listBoard(actor, projectId, { ...filter, limit: BOARD_TASK_LIMIT + 1 }),
     workspaceService.listMembers(actor),
     prismaStatusRepository.listStatusesByProject(projectId),
     prismaSprintRepository.listSprintsByProject(projectId),
@@ -84,13 +89,15 @@ export const getProjectBoard = cache(async (
 
   const statusIndexMap = new Map(statuses.map((s, idx) => [s.id, idx]));
 
-  const tasks = rawTasks
+  const sortedTasks = rawTasks
     .filter((t) => t.workspaceId === actor.workspaceId)
     .sort((a, b) => {
       const idxA = statusIndexMap.get(a.statusId) ?? 999;
       const idxB = statusIndexMap.get(b.statusId) ?? 999;
       return idxA - idxB || a.position - b.position;
     });
+
+  const { tasks, truncated: tasksTruncated } = applyBoardLimit(sortedTasks);
 
   const taskIds = tasks.map((t) => t.id);
 
@@ -137,6 +144,7 @@ export const getProjectBoard = cache(async (
     sprintTotals,
     sprintDoneTotals,
     tasks,
+    tasksTruncated,
     members,
     commentsByTask,
     activitiesByTask,

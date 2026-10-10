@@ -69,6 +69,7 @@ import type {
   TaskCustomFieldValueRecord,
 } from "@/features/custom-fields/custom-field-service";
 import type { TaskFilterInput, TaskRecord } from "@/features/tasks/task-service";
+import { BOARD_TASK_LIMIT } from "@/features/tasks/task-service";
 
 import type { MemberWithUser } from "@/features/workspaces/workspace-service";
 import {
@@ -584,6 +585,7 @@ export function KanbanBoard({
   activeSprintId,
   actorRole,
   actorUserId,
+  tasksTruncated = false,
 }: {
   tasks: TaskRecord[];
   statuses?: StatusRecord[];
@@ -605,6 +607,8 @@ export function KanbanBoard({
   activeSprintId?: string | null;
   actorRole: Role;
   actorUserId: string;
+  /** Board vượt cap và đã bị cắt — hiện banner thay vì mất lặng lẽ. */
+  tasksTruncated?: boolean;
 }) {
   const router = useRouter();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -1146,6 +1150,12 @@ export function KanbanBoard({
         {boardError ? (
           <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-xs text-danger">
             {boardError}
+          </p>
+        ) : null}
+
+        {tasksTruncated ? (
+          <p role="status" className="rounded-md border border-rule bg-panel px-3 py-2 text-xs text-ink-soft">
+            Showing the first {BOARD_TASK_LIMIT} tasks — use search or filters to narrow down.
           </p>
         ) : null}
 

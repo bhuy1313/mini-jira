@@ -237,6 +237,8 @@ export const prismaTaskRepository: TaskRepository = {
 
   async listTasksByProject(projectId: string, filter?: TaskFilterInput): Promise<TaskRecord[]> {
     const q = filter?.query?.trim() ?? "";
+    // Board cap: chỉ cắt khi caller xin limit, kẹp >= 1 để tránh take(0)/LIMIT 0.
+    const take = filter?.limit !== undefined ? Math.max(1, Math.floor(filter.limit)) : undefined;
 
     // Mốc 17: Full-text search path — khi có query, dùng tsvector
     if (q.length > 0) {
@@ -277,6 +279,8 @@ export const prismaTaskRepository: TaskRepository = {
       }
 
       const extra = extraConditions.length > 0 ? ` AND ${extraConditions.join(" AND ")}` : "";
+      const limitClause = take !== undefined ? ` LIMIT $${idx}` : "";
+      const limitParams: unknown[] = take !== undefined ? [take] : [];
       const sql = `
         SELECT t.id, t."projectId", t.title, t.description,
           t."statusId", t."sprintId", t.priority, t."dueDate",
@@ -293,9 +297,10 @@ export const prismaTaskRepository: TaskRepository = {
           AND (t."search_vector" IS NULL OR t."search_vector" @@ websearch_to_tsquery('simple', $2))
           ${extra}
         ORDER BY rank DESC, s.position ASC, t.position ASC
+        ${limitClause}
       `;
 
-      const rows = await prisma.$queryRawUnsafe<FtsRow[]>(sql, ...params);
+      const rows = await prisma.$queryRawUnsafe<FtsRow[]>(sql, ...params, ...limitParams);
       return rows.map(ftsRowToTaskRecord);
     }
 
@@ -322,6 +327,7 @@ export const prismaTaskRepository: TaskRepository = {
       where,
       select: TASK_SELECT,
       orderBy: [{ status: { position: "asc" } }, { position: "asc" }],
+      ...(take !== undefined ? { take } : {}),
     });
     return rows.map(toTaskRecord);
   },

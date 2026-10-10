@@ -7,6 +7,8 @@ import type {
   NotificationPublisher,
 } from "@/features/notifications/notification-service";
 import {
+  applyBoardLimit,
+  BOARD_TASK_LIMIT,
   createTaskService,
   type TaskRecord,
   type TaskRepository,
@@ -457,6 +459,39 @@ describe("Task service — search & filters (FR-080..FR-085)", () => {
     });
     expect(filtered).toHaveLength(1);
     expect(filtered[0].id).toBe("t3");
+  });
+});
+
+describe("Task service — board limit", () => {
+  it("applyBoardLimit giữ nguyên list dưới cap", () => {
+    const tasks = [makeTask({ id: "a", projectId: "p1", creatorId: "alice" })];
+    const res = applyBoardLimit(tasks, 2);
+    expect(res.truncated).toBe(false);
+    expect(res.tasks).toHaveLength(1);
+  });
+
+  it("applyBoardLimit cắt đúng cap và báo truncated", () => {
+    const tasks = ["a", "b", "c"].map((id) =>
+      makeTask({ id, projectId: "p1", creatorId: "alice" }),
+    );
+    const res = applyBoardLimit(tasks, 2);
+    expect(res.truncated).toBe(true);
+    expect(res.tasks.map((t) => t.id)).toEqual(["a", "b"]);
+  });
+
+  it("listBoard chuyển limit xuống repo", async () => {
+    const { repo, calls } = makeRepo([
+      makeTask({ id: "a", projectId: "p1", creatorId: "alice" }),
+    ]);
+    await svc(repo).listBoard(act("Member"), "p1", { limit: 10 });
+    const forwarded = calls.listTasksByProject?.[0] as {
+      filter?: { limit?: number };
+    };
+    expect(forwarded.filter?.limit).toBe(10);
+  });
+
+  it("BOARD_TASK_LIMIT là số dương hợp lý", () => {
+    expect(BOARD_TASK_LIMIT).toBeGreaterThanOrEqual(100);
   });
 });
 

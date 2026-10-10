@@ -116,6 +116,7 @@ export default async function ProjectDetailPage({
           ) : null}
           <KanbanBoard
             tasks={board.tasks}
+            tasksTruncated={board.tasksTruncated}
             statuses={board.statuses}
             sprints={board.sprints}
             sprintTotals={board.sprintTotals}
