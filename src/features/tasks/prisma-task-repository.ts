@@ -8,6 +8,7 @@ import type { TaskFilterInput, TaskRecord, TaskRepository } from "./task-service
 
 type RawTask = {
   id: string;
+  key: string | null;
   projectId: string;
   title: string;
   description: string | null;
@@ -49,6 +50,7 @@ function toTaskRecord(row: RawTask): TaskRecord {
 
   return {
     id: row.id,
+    key: row.key ?? null,
     projectId: row.projectId,
     workspaceId: row.project.workspaceId,
     creatorId: row.creatorId,
@@ -77,6 +79,7 @@ function toTaskRecord(row: RawTask): TaskRecord {
  */
 type FtsRow = {
   id: string;
+  key: string | null;
   projectId: string;
   title: string;
   description: string | null;
@@ -97,6 +100,7 @@ type FtsRow = {
 function ftsRowToTaskRecord(row: FtsRow): TaskRecord {
   return {
     id: row.id,
+    key: row.key ?? null,
     projectId: row.projectId,
     workspaceId: row.workspaceId,
     creatorId: row.creatorId,
@@ -121,6 +125,7 @@ function ftsRowToTaskRecord(row: FtsRow): TaskRecord {
 
 const TASK_SELECT = {
   id: true,
+  key: true,
   projectId: true,
   title: true,
   description: true,
@@ -282,7 +287,7 @@ export const prismaTaskRepository: TaskRepository = {
       const limitClause = take !== undefined ? ` LIMIT $${idx}` : "";
       const limitParams: unknown[] = take !== undefined ? [take] : [];
       const sql = `
-        SELECT t.id, t."projectId", t.title, t.description,
+        SELECT t.id, t.key, t."projectId", t.title, t.description,
           t."statusId", t."sprintId", t.priority, t."dueDate",
           t.position, t."creatorId", t."assigneeId",
           p."workspaceId",
@@ -368,7 +373,7 @@ export const prismaTaskRepository: TaskRepository = {
 
       const extra = extraConditions.length > 0 ? ` AND ${extraConditions.join(" AND ")}` : "";
       const sql = `
-        SELECT t.id, t."projectId", t.title, t.description,
+        SELECT t.id, t.key, t."projectId", t.title, t.description,
           t."statusId", t."sprintId", t.priority, t."dueDate",
           t.position, t."creatorId", t."assigneeId",
           p."workspaceId",
@@ -424,9 +429,17 @@ export const prismaTaskRepository: TaskRepository = {
   async createTask(input): Promise<TaskRecord> {
     const taskId = randomUUID();
     return prisma.$transaction(async (tx) => {
+      // Đếm nguyên tử trên row project trong cùng tx: concurrent create
+      // serialize ở row-lock nên key không bao giờ trùng/khuyết số.
+      const project = await tx.project.update({
+        where: { id: input.projectId },
+        data: { taskCounter: { increment: 1 } },
+        select: { key: true, taskCounter: true },
+      });
       const row = await tx.task.create({
         data: {
           id: taskId,
+          key: `${project.key}-${project.taskCounter}`,
           projectId: input.projectId,
           creatorId: input.creatorId,
           title: input.title,

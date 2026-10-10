@@ -1,12 +1,26 @@
 import { randomUUID } from "node:crypto";
 
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { ValidationError } from "@/features/authorization/errors";
 import { DEFAULT_PROJECT_LABELS } from "@/features/labels/label-service";
 import type { ProjectRecord, ProjectRepository } from "./project-service";
+
+const PROJECT_SELECT = {
+  id: true,
+  name: true,
+  key: true,
+  taskCounter: true,
+  description: true,
+  archivedAt: true,
+  workspaceId: true,
+} as const;
 
 function toProjectRecord(row: {
   id: string;
   name: string;
+  key: string;
+  taskCounter: number;
   description: string | null;
   archivedAt: Date | null;
   workspaceId: string;
@@ -14,10 +28,22 @@ function toProjectRecord(row: {
   return {
     id: row.id,
     name: row.name,
+    key: row.key,
+    taskCounter: row.taskCounter,
     description: row.description,
     archivedAt: row.archivedAt,
     workspaceId: row.workspaceId,
   };
+}
+
+function duplicateKeyError(err: unknown): void {
+  if (
+    err instanceof Prisma.PrismaClientKnownRequestError &&
+    err.code === "P2002"
+  ) {
+    throw new ValidationError("Project key is already taken in this workspace.");
+  }
+  throw err;
 }
 
 /**
@@ -28,7 +54,7 @@ export const prismaProjectRepository: ProjectRepository = {
   async listActiveProjects(workspaceId: string): Promise<ProjectRecord[]> {
     const rows = await prisma.project.findMany({
       where: { workspaceId, archivedAt: null },
-      select: { id: true, name: true, description: true, archivedAt: true, workspaceId: true },
+      select: PROJECT_SELECT,
       orderBy: { createdAt: "asc" },
     });
     return rows.map(toProjectRecord);
@@ -37,7 +63,7 @@ export const prismaProjectRepository: ProjectRepository = {
   async listArchivedProjects(workspaceId: string): Promise<ProjectRecord[]> {
     const rows = await prisma.project.findMany({
       where: { workspaceId, archivedAt: { not: null } },
-      select: { id: true, name: true, description: true, archivedAt: true, workspaceId: true },
+      select: PROJECT_SELECT,
       orderBy: { updatedAt: "desc" },
     });
     return rows.map(toProjectRecord);
@@ -46,7 +72,15 @@ export const prismaProjectRepository: ProjectRepository = {
   async getProject(projectId: string): Promise<ProjectRecord | null> {
     const row = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { id: true, name: true, description: true, archivedAt: true, workspaceId: true },
+      select: PROJECT_SELECT,
+    });
+    return row ? toProjectRecord(row) : null;
+  },
+
+  async findProjectByKey(workspaceId: string, key: string): Promise<ProjectRecord | null> {
+    const row = await prisma.project.findUnique({
+      where: { workspaceId_key: { workspaceId, key } },
+      select: PROJECT_SELECT,
     });
     return row ? toProjectRecord(row) : null;
   },
@@ -54,19 +88,22 @@ export const prismaProjectRepository: ProjectRepository = {
   async createProject(input: {
     workspaceId: string;
     name: string;
+    key: string;
     description: string | null;
   }): Promise<ProjectRecord> {
     const projectId = randomUUID();
-    const [row] = await prisma.$transaction([
-      prisma.project.create({
-        data: {
-          id: projectId,
-          workspaceId: input.workspaceId,
-          name: input.name,
-          description: input.description,
-        },
-        select: { id: true, name: true, description: true, archivedAt: true, workspaceId: true },
-      }),
+    try {
+      const [row] = await prisma.$transaction([
+        prisma.project.create({
+          data: {
+            id: projectId,
+            workspaceId: input.workspaceId,
+            name: input.name,
+            key: input.key,
+            description: input.description,
+          },
+          select: PROJECT_SELECT,
+        }),
       prisma.status.createMany({
         data: [
           { id: randomUUID(), projectId, name: "To Do", position: 1000, isDefault: true },
@@ -82,8 +119,12 @@ export const prismaProjectRepository: ProjectRepository = {
           color: l.color,
         })),
       }),
-    ]);
-    return toProjectRecord(row);
+      ]);
+      return toProjectRecord(row);
+    } catch (err) {
+      duplicateKeyError(err);
+      throw err;
+    }
   },
 
   async updateProject(input: {
@@ -97,7 +138,7 @@ export const prismaProjectRepository: ProjectRepository = {
     const row = await prisma.project.update({
       where: { id: input.projectId },
       data,
-      select: { id: true, name: true, description: true, archivedAt: true, workspaceId: true },
+      select: PROJECT_SELECT,
     });
     return toProjectRecord(row);
   },
@@ -106,7 +147,7 @@ export const prismaProjectRepository: ProjectRepository = {
     const row = await prisma.project.update({
       where: { id: input.projectId },
       data: { archivedAt: input.archivedAt },
-      select: { id: true, name: true, description: true, archivedAt: true, workspaceId: true },
+      select: PROJECT_SELECT,
     });
     return toProjectRecord(row);
   },
@@ -123,20 +164,23 @@ export const prismaProjectRepository: ProjectRepository = {
   async createProjectWithOwner(input: {
     workspaceId: string;
     name: string;
+    key: string;
     description: string | null;
     creatorId: string;
   }): Promise<ProjectRecord> {
     const projectId = randomUUID();
-    const [project] = await prisma.$transaction([
-      prisma.project.create({
-        data: {
-          id: projectId,
-          workspaceId: input.workspaceId,
-          name: input.name,
-          description: input.description,
-        },
-        select: { id: true, name: true, description: true, archivedAt: true, workspaceId: true },
-      }),
+    try {
+      const [project] = await prisma.$transaction([
+        prisma.project.create({
+          data: {
+            id: projectId,
+            workspaceId: input.workspaceId,
+            name: input.name,
+            key: input.key,
+            description: input.description,
+          },
+          select: PROJECT_SELECT,
+        }),
       prisma.projectMember.create({
         data: {
           projectId,
@@ -159,8 +203,12 @@ export const prismaProjectRepository: ProjectRepository = {
           color: l.color,
         })),
       }),
-    ]);
-    return toProjectRecord(project);
+      ]);
+      return toProjectRecord(project);
+    } catch (err) {
+      duplicateKeyError(err);
+      throw err;
+    }
   },
 
   /** Danh sách userId của tất cả workspace member (để validate khi thêm project member). */

@@ -93,6 +93,7 @@ export async function GET(
           select: {
             id: true,
             name: true,
+            key: true,
             workspaceId: true,
           },
         },
@@ -122,6 +123,7 @@ export async function GET(
 
     return jsonSuccess({
       id: task.id,
+      key: task.key,
       title: task.title,
       description: task.description,
       priority: task.priority,

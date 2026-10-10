@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { UnauthorizedError } from "@/features/authorization/errors";
+import { UnauthorizedError, ValidationError } from "@/features/authorization/errors";
 import type { Role } from "@/features/authorization/permissions";
 import type { ProjectActor } from "@/features/authorization/actor";
 import type {
@@ -9,6 +9,8 @@ import type {
 } from "@/features/notifications/notification-service";
 import {
   createProjectService,
+  deriveProjectKey,
+  validateProjectKey,
   type ProjectRecord,
   type ProjectRepository,
 } from "./project-service";
@@ -22,6 +24,8 @@ const actor = {
 const active: ProjectRecord = {
   id: "p1",
   name: "Website",
+  key: "WEB",
+  taskCounter: 0,
   description: null,
   archivedAt: null,
   workspaceId: "ws1",
@@ -29,6 +33,8 @@ const active: ProjectRecord = {
 const archived: ProjectRecord = {
   id: "p2",
   name: "Legacy",
+  key: "LEG",
+  taskCounter: 0,
   description: null,
   archivedAt: new Date("2026-01-01T00:00:00Z"),
   workspaceId: "ws1",
@@ -36,6 +42,8 @@ const archived: ProjectRecord = {
 const otherWs: ProjectRecord = {
   id: "p9",
   name: "Other",
+  key: "OTH",
+  taskCounter: 0,
   description: null,
   archivedAt: null,
   workspaceId: "ws9",
@@ -60,9 +68,12 @@ function makeRepo(overrides: Partial<ProjectRepository> = {}): { repo: ProjectRe
       records.filter((r) => r.workspaceId === workspaceId && r.archivedAt !== null),
     ),
     getProject: vi.fn(async (projectId) => records.find((r) => r.id === projectId) ?? null),
-    createProject: vi.fn(async ({ workspaceId, name, description }) => {
-      track("createProject", { workspaceId, name, description });
-      return { id: "p_new", name, description, archivedAt: null, workspaceId };
+    findProjectByKey: vi.fn(async (workspaceId, key) =>
+      records.find((r) => r.workspaceId === workspaceId && r.key === key) ?? null,
+    ),
+    createProject: vi.fn(async ({ workspaceId, name, key, description }) => {
+      track("createProject", { workspaceId, name, key, description });
+      return { id: "p_new", name, key, taskCounter: 0, description, archivedAt: null, workspaceId };
     }),
     updateProject: vi.fn(async ({ projectId, name, description }) => {
       track("updateProject", { projectId, name, description });
@@ -84,9 +95,9 @@ function makeRepo(overrides: Partial<ProjectRepository> = {}): { repo: ProjectRe
       const i = records.findIndex((x) => x.id === projectId);
       if (i >= 0) records.splice(i, 1);
     }),
-    createProjectWithOwner: vi.fn(async ({ workspaceId, name, description, creatorId }) => {
-      track("createProjectWithOwner", { workspaceId, name, description, creatorId });
-      const p = { id: "p_new_owned", name, description, archivedAt: null, workspaceId };
+    createProjectWithOwner: vi.fn(async ({ workspaceId, name, key, description, creatorId }) => {
+      track("createProjectWithOwner", { workspaceId, name, key, description, creatorId });
+      const p = { id: "p_new_owned", name, key, taskCounter: 0, description, archivedAt: null, workspaceId };
       records.push(p);
       return p;
     }),
@@ -170,6 +181,51 @@ describe("Project service — tạo / sửa (Owner/Admin, không Member)", () =>
     await expect(svc(repo).updateProject(act("Member"), "p1", { name: "X" })).rejects.toBeInstanceOf(
       UnauthorizedError,
     );
+  });
+});
+
+describe("Project service — project key", () => {
+  it("deriveProjectKey suy từ tên, fallback PRJ", async () => {
+    expect(deriveProjectKey("Website Redesign")).toBe("WEB");
+    expect(deriveProjectKey("a")).toBe("PRJ");
+    expect(deriveProjectKey("!!!")).toBe("PRJ");
+  });
+
+  it("validateProjectKey chuẩn hóa + từ chối format sai", async () => {
+    expect(validateProjectKey("prj")).toBe("PRJ");
+    expect(validateProjectKey("MOB1")).toBe("MOB1");
+    expect(() => validateProjectKey("x")).toThrow(ValidationError);
+    expect(() => validateProjectKey("WAY-TOOLONG-KEY")).toThrow(ValidationError);
+    expect(() => validateProjectKey("A B")).toThrow(ValidationError);
+  });
+
+  it("key explicit trùng trong workspace → ValidationError", async () => {
+    const { repo } = makeRepo();
+    await expect(
+      svc(repo).createProject(act("Owner"), { name: "Clone", key: "WEB" }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("key explicit hợp lệ được truyền xuống repo", async () => {
+    const { repo, calls } = makeRepo();
+    await svc(repo).createProject(act("Owner"), { name: "Mobile", key: "mob" });
+    const forwarded = calls.createProject?.[0] as { key?: string };
+    expect(forwarded.key).toBe("MOB");
+  });
+
+  it("thiếu key thì tự suy từ tên và dồn hậu tố khi trùng", async () => {
+    const { repo, calls } = makeRepo();
+    await svc(repo).createProject(act("Owner"), { name: "Website" });
+    const forwarded = calls.createProject?.[0] as { key?: string };
+    // "WEB" đã có (p1) → dồn thành "WEB-2"
+    expect(forwarded.key).toBe("WEB-2");
+  });
+
+  it("thiếu key với tên mới thì lấy stem", async () => {
+    const { repo, calls } = makeRepo();
+    await svc(repo).createProject(act("Owner"), { name: "Analytics" });
+    const forwarded = calls.createProject?.[0] as { key?: string };
+    expect(forwarded.key).toBe("ANA");
   });
 });
 

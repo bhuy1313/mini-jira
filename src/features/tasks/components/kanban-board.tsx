@@ -298,6 +298,12 @@ function SortableTaskCard({
           </div>
         </div>
 
+        {task.key ? (
+          <div className="mt-1 font-mono text-[10px] tracking-wide text-ink-faint">
+            {task.key}
+          </div>
+        ) : null}
+
         {labels.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-1">
             {labels.map((label) => (
@@ -654,6 +660,7 @@ export function KanbanBoard({
     const lastPosition = currentList.at(-1)?.position ?? 0;
     const optimisticTask: TaskRecord = {
       id: tempId,
+      key: null,
       projectId,
       workspaceId,
       creatorId: actorUserId,

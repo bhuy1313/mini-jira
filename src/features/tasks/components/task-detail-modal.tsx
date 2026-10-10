@@ -520,6 +520,11 @@ export function TaskDetailModal({
               <span className="font-semibold text-ink">{task.parentTitle || "Parent task"}</span>
             </div>
           )}
+          {task.key ? (
+            <div className="mb-1 font-mono text-[11px] tracking-wide text-ink-faint">
+              {task.key}
+            </div>
+          ) : null}
           {canEditTitle ? (
             <form
               action={titleAction}

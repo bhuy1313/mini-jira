@@ -130,6 +130,7 @@ async function main() {
       data: {
         id: "proj-mini-jira-core",
         name: "Mini Jira Core MVP",
+        key: "MJC",
         description: "Task tracking and workspace management platform.",
         workspaceId: workspace.id,
       },
@@ -205,6 +206,7 @@ async function main() {
       data: {
         id: "proj-legacy-migration",
         name: "Legacy Portal Migration",
+        key: "LPM",
         description: "Historical migration project completed in Q1.",
         workspaceId: workspace.id,
         archivedAt: new Date("2026-01-15T08:00:00Z"),
@@ -272,12 +274,13 @@ async function main() {
     },
   ];
 
-  for (const t of sampleTasks) {
+  for (const [index, t] of sampleTasks.entries()) {
     const existingTask = await prisma.task.findUnique({ where: { id: t.id } });
     if (!existingTask) {
       const created = await prisma.task.create({
         data: {
           id: t.id,
+          key: `MJC-${index + 1}`,
           title: t.title,
           description: t.description,
           statusId: t.statusId,
@@ -313,6 +316,18 @@ async function main() {
         });
       }
     }
+  }
+  // Giữ taskCounter khớp với seed (task tạo trực tiếp, không qua counter) —
+  // chỉ nâng lên, không bao giờ hạ (idempotent khi seed chạy lại).
+  const counterRow = await prisma.project.findUnique({
+    where: { id: activeProject.id },
+    select: { taskCounter: true },
+  });
+  if (counterRow && counterRow.taskCounter < sampleTasks.length) {
+    await prisma.project.update({
+      where: { id: activeProject.id },
+      data: { taskCounter: sampleTasks.length },
+    });
   }
   console.log("Sample tasks, activities and comments seeded.");
 

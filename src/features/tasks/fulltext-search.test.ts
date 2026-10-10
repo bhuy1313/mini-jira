@@ -13,6 +13,7 @@ const WS2 = "ws2";
 
 function makeTask(overrides: Partial<TaskRecord> & Pick<TaskRecord, "id" | "projectId" | "workspaceId">): TaskRecord {
   return {
+    key: overrides.key ?? null,
     creatorId: "creator",
     assigneeId: null,
     title: overrides.title ?? `Task ${overrides.id}`,

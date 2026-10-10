@@ -39,6 +39,7 @@ describe("Time Tracking & Worklog Service", () => {
 
   const sampleTask: TaskRecord = {
     id: "task-1",
+    key: "PRJ-1",
     projectId,
     workspaceId,
     creatorId: "user-owner",

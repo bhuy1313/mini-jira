@@ -18,16 +18,27 @@ export function CreateProjectModal({
   workspaceId: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [projectName, setProjectName] = useState("");
+  const [projectKey, setProjectKey] = useState("");
+  const [keyTouched, setKeyTouched] = useState(false);
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
       const res = await createProjectAction(workspaceId, formData);
       if (!res?.error) {
-        onClose();
+        handleClose();
       }
       return res;
     },
     {},
   );
+
+  // Reset form khi đóng (event handler, không phải effect) để lần mở sau sạch.
+  function handleClose() {
+    setProjectName("");
+    setProjectKey("");
+    setKeyTouched(false);
+    onClose();
+  }
 
   useEffect(() => {
     if (open) {
@@ -38,7 +49,7 @@ export function CreateProjectModal({
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       labelledBy="create-project-heading"
       panelClassName="max-w-md p-0 overflow-hidden"
     >
@@ -53,7 +64,7 @@ export function CreateProjectModal({
         </div>
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleClose}
           aria-label="Close dialog"
           className="rounded p-1 text-ink-faint transition-colors hover:bg-paper hover:text-ink"
         >
@@ -72,10 +83,41 @@ export function CreateProjectModal({
             name="name"
             required
             maxLength={80}
+            value={projectName}
+            onChange={(e) => {
+              const v = e.target.value;
+              setProjectName(v);
+              if (!keyTouched) {
+                const stem = v.replace(/[^A-Za-z0-9]/g, "").slice(0, 3).toUpperCase();
+                setProjectKey(/^[A-Z0-9]{2,}$/.test(stem) ? stem : "");
+              }
+            }}
             placeholder="e.g. Website Redesign, Mobile App"
             aria-label="Project name"
             className="w-full rounded-md border border-rule bg-paper px-3 py-2 text-sm text-ink placeholder:text-ink-faint transition-colors hover:border-rule-strong focus:border-primary focus:outline-none"
           />
+        </div>
+
+        <div>
+          <label htmlFor="project-key-input" className="block text-xs font-medium text-ink mb-1.5">
+            Project Key <span className="text-ink-faint font-normal">(tasks become KEY-1, KEY-2…)</span>
+          </label>
+          <input
+            id="project-key-input"
+            name="key"
+            maxLength={10}
+            value={projectKey}
+            onChange={(e) => {
+              setKeyTouched(true);
+              setProjectKey(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10));
+            }}
+            placeholder="e.g. WEB"
+            aria-label="Project key"
+            className="w-40 rounded-md border border-rule bg-paper px-3 py-2 text-sm font-mono uppercase text-ink placeholder:text-ink-faint placeholder:normal-case transition-colors hover:border-rule-strong focus:border-primary focus:outline-none"
+          />
+          <p className="mt-1 text-[11px] text-ink-faint">
+            2–10 letters/digits. Leave empty to derive from the name. Cannot be changed later.
+          </p>
         </div>
 
         <div>
@@ -100,7 +142,7 @@ export function CreateProjectModal({
         ) : null}
 
         <div className="flex items-center justify-end gap-2 border-t border-rule pt-4 mt-2">
-          <Button type="button" variant="secondary" size="sm" onClick={onClose} disabled={pending}>
+          <Button type="button" variant="secondary" size="sm" onClick={handleClose} disabled={pending}>
             Cancel
           </Button>
           <Button type="submit" size="sm" disabled={pending} className="bg-primary text-white">

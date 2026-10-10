@@ -42,6 +42,8 @@ export interface SubtaskSummary {
 
 export interface TaskRecord {
   id: string;
+  /** Human-friendly key (e.g. "PRJ-123"). Null chỉ với row legacy chưa backfill. */
+  key: string | null;
   projectId: string;
   workspaceId: string;
   creatorId: string;

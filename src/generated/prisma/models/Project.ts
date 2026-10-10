@@ -20,13 +20,25 @@ export type ProjectModel = runtime.Types.Result.DefaultSelection<Prisma.$Project
 
 export type AggregateProject = {
   _count: ProjectCountAggregateOutputType | null
+  _avg: ProjectAvgAggregateOutputType | null
+  _sum: ProjectSumAggregateOutputType | null
   _min: ProjectMinAggregateOutputType | null
   _max: ProjectMaxAggregateOutputType | null
+}
+
+export type ProjectAvgAggregateOutputType = {
+  taskCounter: number | null
+}
+
+export type ProjectSumAggregateOutputType = {
+  taskCounter: number | null
 }
 
 export type ProjectMinAggregateOutputType = {
   id: string | null
   name: string | null
+  key: string | null
+  taskCounter: number | null
   description: string | null
   archivedAt: Date | null
   workspaceId: string | null
@@ -37,6 +49,8 @@ export type ProjectMinAggregateOutputType = {
 export type ProjectMaxAggregateOutputType = {
   id: string | null
   name: string | null
+  key: string | null
+  taskCounter: number | null
   description: string | null
   archivedAt: Date | null
   workspaceId: string | null
@@ -47,6 +61,8 @@ export type ProjectMaxAggregateOutputType = {
 export type ProjectCountAggregateOutputType = {
   id: number
   name: number
+  key: number
+  taskCounter: number
   description: number
   archivedAt: number
   workspaceId: number
@@ -56,9 +72,19 @@ export type ProjectCountAggregateOutputType = {
 }
 
 
+export type ProjectAvgAggregateInputType = {
+  taskCounter?: true
+}
+
+export type ProjectSumAggregateInputType = {
+  taskCounter?: true
+}
+
 export type ProjectMinAggregateInputType = {
   id?: true
   name?: true
+  key?: true
+  taskCounter?: true
   description?: true
   archivedAt?: true
   workspaceId?: true
@@ -69,6 +95,8 @@ export type ProjectMinAggregateInputType = {
 export type ProjectMaxAggregateInputType = {
   id?: true
   name?: true
+  key?: true
+  taskCounter?: true
   description?: true
   archivedAt?: true
   workspaceId?: true
@@ -79,6 +107,8 @@ export type ProjectMaxAggregateInputType = {
 export type ProjectCountAggregateInputType = {
   id?: true
   name?: true
+  key?: true
+  taskCounter?: true
   description?: true
   archivedAt?: true
   workspaceId?: true
@@ -125,6 +155,18 @@ export type ProjectAggregateArgs<ExtArgs extends runtime.Types.Extensions.Intern
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: ProjectAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: ProjectSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: ProjectMinAggregateInputType
@@ -155,6 +197,8 @@ export type ProjectGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   _count?: ProjectCountAggregateInputType | true
+  _avg?: ProjectAvgAggregateInputType
+  _sum?: ProjectSumAggregateInputType
   _min?: ProjectMinAggregateInputType
   _max?: ProjectMaxAggregateInputType
 }
@@ -162,12 +206,16 @@ export type ProjectGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 export type ProjectGroupByOutputType = {
   id: string
   name: string
+  key: string
+  taskCounter: number
   description: string | null
   archivedAt: Date | null
   workspaceId: string
   createdAt: Date
   updatedAt: Date
   _count: ProjectCountAggregateOutputType | null
+  _avg: ProjectAvgAggregateOutputType | null
+  _sum: ProjectSumAggregateOutputType | null
   _min: ProjectMinAggregateOutputType | null
   _max: ProjectMaxAggregateOutputType | null
 }
@@ -193,6 +241,8 @@ export type ProjectWhereInput = {
   NOT?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[]
   id?: Prisma.StringFilter<"Project"> | string
   name?: Prisma.StringFilter<"Project"> | string
+  key?: Prisma.StringFilter<"Project"> | string
+  taskCounter?: Prisma.IntFilter<"Project"> | number
   description?: Prisma.StringNullableFilter<"Project"> | string | null
   archivedAt?: Prisma.DateTimeNullableFilter<"Project"> | Date | string | null
   workspaceId?: Prisma.StringFilter<"Project"> | string
@@ -212,6 +262,8 @@ export type ProjectWhereInput = {
 export type ProjectOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  key?: Prisma.SortOrder
+  taskCounter?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   workspaceId?: Prisma.SortOrder
@@ -230,10 +282,13 @@ export type ProjectOrderByWithRelationInput = {
 
 export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  workspaceId_key?: Prisma.ProjectWorkspaceIdKeyCompoundUniqueInput
   AND?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[]
   OR?: Prisma.ProjectWhereInput[]
   NOT?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[]
   name?: Prisma.StringFilter<"Project"> | string
+  key?: Prisma.StringFilter<"Project"> | string
+  taskCounter?: Prisma.IntFilter<"Project"> | number
   description?: Prisma.StringNullableFilter<"Project"> | string | null
   archivedAt?: Prisma.DateTimeNullableFilter<"Project"> | Date | string | null
   workspaceId?: Prisma.StringFilter<"Project"> | string
@@ -248,19 +303,23 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   customFields?: Prisma.CustomFieldListRelationFilter
   automationRules?: Prisma.AutomationRuleListRelationFilter
   webhooks?: Prisma.WebhookListRelationFilter
-}, "id">
+}, "id" | "workspaceId_key">
 
 export type ProjectOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  key?: Prisma.SortOrder
+  taskCounter?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   workspaceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ProjectCountOrderByAggregateInput
+  _avg?: Prisma.ProjectAvgOrderByAggregateInput
   _max?: Prisma.ProjectMaxOrderByAggregateInput
   _min?: Prisma.ProjectMinOrderByAggregateInput
+  _sum?: Prisma.ProjectSumOrderByAggregateInput
 }
 
 export type ProjectScalarWhereWithAggregatesInput = {
@@ -269,6 +328,8 @@ export type ProjectScalarWhereWithAggregatesInput = {
   NOT?: Prisma.ProjectScalarWhereWithAggregatesInput | Prisma.ProjectScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Project"> | string
   name?: Prisma.StringWithAggregatesFilter<"Project"> | string
+  key?: Prisma.StringWithAggregatesFilter<"Project"> | string
+  taskCounter?: Prisma.IntWithAggregatesFilter<"Project"> | number
   description?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
   archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Project"> | Date | string | null
   workspaceId?: Prisma.StringWithAggregatesFilter<"Project"> | string
@@ -279,6 +340,8 @@ export type ProjectScalarWhereWithAggregatesInput = {
 export type ProjectCreateInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -297,6 +360,8 @@ export type ProjectCreateInput = {
 export type ProjectUncheckedCreateInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   workspaceId: string
@@ -315,6 +380,8 @@ export type ProjectUncheckedCreateInput = {
 export type ProjectUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -333,6 +400,8 @@ export type ProjectUpdateInput = {
 export type ProjectUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -351,6 +420,8 @@ export type ProjectUncheckedUpdateInput = {
 export type ProjectCreateManyInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   workspaceId: string
@@ -361,6 +432,8 @@ export type ProjectCreateManyInput = {
 export type ProjectUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -370,6 +443,8 @@ export type ProjectUpdateManyMutationInput = {
 export type ProjectUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -387,9 +462,16 @@ export type ProjectOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type ProjectWorkspaceIdKeyCompoundUniqueInput = {
+  workspaceId: string
+  key: string
+}
+
 export type ProjectCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  key?: Prisma.SortOrder
+  taskCounter?: Prisma.SortOrder
   description?: Prisma.SortOrder
   archivedAt?: Prisma.SortOrder
   workspaceId?: Prisma.SortOrder
@@ -397,9 +479,15 @@ export type ProjectCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type ProjectAvgOrderByAggregateInput = {
+  taskCounter?: Prisma.SortOrder
+}
+
 export type ProjectMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  key?: Prisma.SortOrder
+  taskCounter?: Prisma.SortOrder
   description?: Prisma.SortOrder
   archivedAt?: Prisma.SortOrder
   workspaceId?: Prisma.SortOrder
@@ -410,11 +498,17 @@ export type ProjectMaxOrderByAggregateInput = {
 export type ProjectMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  key?: Prisma.SortOrder
+  taskCounter?: Prisma.SortOrder
   description?: Prisma.SortOrder
   archivedAt?: Prisma.SortOrder
   workspaceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type ProjectSumOrderByAggregateInput = {
+  taskCounter?: Prisma.SortOrder
 }
 
 export type ProjectScalarRelationFilter = {
@@ -462,6 +556,14 @@ export type ProjectUncheckedUpdateManyWithoutWorkspaceNestedInput = {
   update?: Prisma.ProjectUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.ProjectUpdateWithWhereUniqueWithoutWorkspaceInput[]
   updateMany?: Prisma.ProjectUpdateManyWithWhereWithoutWorkspaceInput | Prisma.ProjectUpdateManyWithWhereWithoutWorkspaceInput[]
   deleteMany?: Prisma.ProjectScalarWhereInput | Prisma.ProjectScalarWhereInput[]
+}
+
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type ProjectCreateNestedOneWithoutMembersInput = {
@@ -579,6 +681,8 @@ export type ProjectUpdateOneRequiredWithoutWebhooksNestedInput = {
 export type ProjectCreateWithoutWorkspaceInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -596,6 +700,8 @@ export type ProjectCreateWithoutWorkspaceInput = {
 export type ProjectUncheckedCreateWithoutWorkspaceInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -642,6 +748,8 @@ export type ProjectScalarWhereInput = {
   NOT?: Prisma.ProjectScalarWhereInput | Prisma.ProjectScalarWhereInput[]
   id?: Prisma.StringFilter<"Project"> | string
   name?: Prisma.StringFilter<"Project"> | string
+  key?: Prisma.StringFilter<"Project"> | string
+  taskCounter?: Prisma.IntFilter<"Project"> | number
   description?: Prisma.StringNullableFilter<"Project"> | string | null
   archivedAt?: Prisma.DateTimeNullableFilter<"Project"> | Date | string | null
   workspaceId?: Prisma.StringFilter<"Project"> | string
@@ -652,6 +760,8 @@ export type ProjectScalarWhereInput = {
 export type ProjectCreateWithoutMembersInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -669,6 +779,8 @@ export type ProjectCreateWithoutMembersInput = {
 export type ProjectUncheckedCreateWithoutMembersInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   workspaceId: string
@@ -702,6 +814,8 @@ export type ProjectUpdateToOneWithWhereWithoutMembersInput = {
 export type ProjectUpdateWithoutMembersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -719,6 +833,8 @@ export type ProjectUpdateWithoutMembersInput = {
 export type ProjectUncheckedUpdateWithoutMembersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -736,6 +852,8 @@ export type ProjectUncheckedUpdateWithoutMembersInput = {
 export type ProjectCreateWithoutStatusesInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -753,6 +871,8 @@ export type ProjectCreateWithoutStatusesInput = {
 export type ProjectUncheckedCreateWithoutStatusesInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   workspaceId: string
@@ -786,6 +906,8 @@ export type ProjectUpdateToOneWithWhereWithoutStatusesInput = {
 export type ProjectUpdateWithoutStatusesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -803,6 +925,8 @@ export type ProjectUpdateWithoutStatusesInput = {
 export type ProjectUncheckedUpdateWithoutStatusesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -820,6 +944,8 @@ export type ProjectUncheckedUpdateWithoutStatusesInput = {
 export type ProjectCreateWithoutSprintsInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -837,6 +963,8 @@ export type ProjectCreateWithoutSprintsInput = {
 export type ProjectUncheckedCreateWithoutSprintsInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   workspaceId: string
@@ -870,6 +998,8 @@ export type ProjectUpdateToOneWithWhereWithoutSprintsInput = {
 export type ProjectUpdateWithoutSprintsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -887,6 +1017,8 @@ export type ProjectUpdateWithoutSprintsInput = {
 export type ProjectUncheckedUpdateWithoutSprintsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -904,6 +1036,8 @@ export type ProjectUncheckedUpdateWithoutSprintsInput = {
 export type ProjectCreateWithoutTasksInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -921,6 +1055,8 @@ export type ProjectCreateWithoutTasksInput = {
 export type ProjectUncheckedCreateWithoutTasksInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   workspaceId: string
@@ -954,6 +1090,8 @@ export type ProjectUpdateToOneWithWhereWithoutTasksInput = {
 export type ProjectUpdateWithoutTasksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -971,6 +1109,8 @@ export type ProjectUpdateWithoutTasksInput = {
 export type ProjectUncheckedUpdateWithoutTasksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -988,6 +1128,8 @@ export type ProjectUncheckedUpdateWithoutTasksInput = {
 export type ProjectCreateWithoutLabelsInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -1005,6 +1147,8 @@ export type ProjectCreateWithoutLabelsInput = {
 export type ProjectUncheckedCreateWithoutLabelsInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   workspaceId: string
@@ -1038,6 +1182,8 @@ export type ProjectUpdateToOneWithWhereWithoutLabelsInput = {
 export type ProjectUpdateWithoutLabelsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1055,6 +1201,8 @@ export type ProjectUpdateWithoutLabelsInput = {
 export type ProjectUncheckedUpdateWithoutLabelsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1072,6 +1220,8 @@ export type ProjectUncheckedUpdateWithoutLabelsInput = {
 export type ProjectCreateWithoutCustomFieldsInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -1089,6 +1239,8 @@ export type ProjectCreateWithoutCustomFieldsInput = {
 export type ProjectUncheckedCreateWithoutCustomFieldsInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   workspaceId: string
@@ -1122,6 +1274,8 @@ export type ProjectUpdateToOneWithWhereWithoutCustomFieldsInput = {
 export type ProjectUpdateWithoutCustomFieldsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1139,6 +1293,8 @@ export type ProjectUpdateWithoutCustomFieldsInput = {
 export type ProjectUncheckedUpdateWithoutCustomFieldsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1156,6 +1312,8 @@ export type ProjectUncheckedUpdateWithoutCustomFieldsInput = {
 export type ProjectCreateWithoutAutomationRulesInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -1173,6 +1331,8 @@ export type ProjectCreateWithoutAutomationRulesInput = {
 export type ProjectUncheckedCreateWithoutAutomationRulesInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   workspaceId: string
@@ -1206,6 +1366,8 @@ export type ProjectUpdateToOneWithWhereWithoutAutomationRulesInput = {
 export type ProjectUpdateWithoutAutomationRulesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1223,6 +1385,8 @@ export type ProjectUpdateWithoutAutomationRulesInput = {
 export type ProjectUncheckedUpdateWithoutAutomationRulesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1240,6 +1404,8 @@ export type ProjectUncheckedUpdateWithoutAutomationRulesInput = {
 export type ProjectCreateWithoutWebhooksInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -1257,6 +1423,8 @@ export type ProjectCreateWithoutWebhooksInput = {
 export type ProjectUncheckedCreateWithoutWebhooksInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   workspaceId: string
@@ -1290,6 +1458,8 @@ export type ProjectUpdateToOneWithWhereWithoutWebhooksInput = {
 export type ProjectUpdateWithoutWebhooksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1307,6 +1477,8 @@ export type ProjectUpdateWithoutWebhooksInput = {
 export type ProjectUncheckedUpdateWithoutWebhooksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1324,6 +1496,8 @@ export type ProjectUncheckedUpdateWithoutWebhooksInput = {
 export type ProjectCreateManyWorkspaceInput = {
   id: string
   name: string
+  key: string
+  taskCounter?: number
   description?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
@@ -1333,6 +1507,8 @@ export type ProjectCreateManyWorkspaceInput = {
 export type ProjectUpdateWithoutWorkspaceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1350,6 +1526,8 @@ export type ProjectUpdateWithoutWorkspaceInput = {
 export type ProjectUncheckedUpdateWithoutWorkspaceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1367,6 +1545,8 @@ export type ProjectUncheckedUpdateWithoutWorkspaceInput = {
 export type ProjectUncheckedUpdateManyWithoutWorkspaceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  taskCounter?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1470,6 +1650,8 @@ export type ProjectCountOutputTypeCountWebhooksArgs<ExtArgs extends runtime.Type
 export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  key?: boolean
+  taskCounter?: boolean
   description?: boolean
   archivedAt?: boolean
   workspaceId?: boolean
@@ -1490,6 +1672,8 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  key?: boolean
+  taskCounter?: boolean
   description?: boolean
   archivedAt?: boolean
   workspaceId?: boolean
@@ -1501,6 +1685,8 @@ export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type ProjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  key?: boolean
+  taskCounter?: boolean
   description?: boolean
   archivedAt?: boolean
   workspaceId?: boolean
@@ -1512,6 +1698,8 @@ export type ProjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type ProjectSelectScalar = {
   id?: boolean
   name?: boolean
+  key?: boolean
+  taskCounter?: boolean
   description?: boolean
   archivedAt?: boolean
   workspaceId?: boolean
@@ -1519,7 +1707,7 @@ export type ProjectSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "description" | "archivedAt" | "workspaceId" | "createdAt" | "updatedAt", ExtArgs["result"]["project"]>
+export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "key" | "taskCounter" | "description" | "archivedAt" | "workspaceId" | "createdAt" | "updatedAt", ExtArgs["result"]["project"]>
 export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
   tasks?: boolean | Prisma.Project$tasksArgs<ExtArgs>
@@ -1555,6 +1743,14 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
+    /**
+     * * Short prefix for task keys (e.g. "PRJ" → PRJ-123). Immutable after creation.
+     */
+    key: string
+    /**
+     * * Monotonic per-project task sequence; incremented atomically on task create.
+     */
+    taskCounter: number
     description: string | null
     archivedAt: Date | null
     workspaceId: string
@@ -1994,6 +2190,8 @@ export interface Prisma__ProjectClient<T, Null = never, ExtArgs extends runtime.
 export interface ProjectFieldRefs {
   readonly id: Prisma.FieldRef<"Project", 'String'>
   readonly name: Prisma.FieldRef<"Project", 'String'>
+  readonly key: Prisma.FieldRef<"Project", 'String'>
+  readonly taskCounter: Prisma.FieldRef<"Project", 'Int'>
   readonly description: Prisma.FieldRef<"Project", 'String'>
   readonly archivedAt: Prisma.FieldRef<"Project", 'DateTime'>
   readonly workspaceId: Prisma.FieldRef<"Project", 'String'>

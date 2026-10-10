@@ -192,6 +192,8 @@ export type WorkspaceMemberScalarFieldEnum = (typeof WorkspaceMemberScalarFieldE
 export const ProjectScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  key: 'key',
+  taskCounter: 'taskCounter',
   description: 'description',
   archivedAt: 'archivedAt',
   workspaceId: 'workspaceId',
@@ -244,6 +246,7 @@ export type SprintScalarFieldEnum = (typeof SprintScalarFieldEnum)[keyof typeof 
 
 export const TaskScalarFieldEnum = {
   id: 'id',
+  key: 'key',
   title: 'title',
   description: 'description',
   statusId: 'statusId',

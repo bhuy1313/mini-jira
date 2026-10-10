@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { UnauthorizedError } from "@/features/authorization/errors";
+import { UnauthorizedError, ValidationError } from "@/features/authorization/errors";
 import { liveNotificationPublisher } from "@/features/notifications/live-notification-publisher-prisma";
 import { createProjectService } from "@/features/projects/project-service";
 import { prismaProjectRepository } from "@/features/projects/prisma-project-repository";
@@ -24,10 +24,13 @@ const nameSchema = z
 const createSchema = z.object({
   name: nameSchema,
   description: z.string().trim().max(500, "Description must be at most 500 characters.").optional(),
+  // Prefix key 2–10 ký tự; trống thì server tự suy từ tên. Validate chi tiết ở service.
+  key: z.string().trim().max(10, "Project key must be at most 10 characters.").optional(),
 });
 
 function message(error: unknown): string {
   if (error instanceof UnauthorizedError) return error.message;
+  if (error instanceof ValidationError) return error.message;
   return "Something went wrong. Please try again.";
 }
 
@@ -41,15 +44,23 @@ export async function createProjectAction(
   const parsed = createSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description") || undefined,
+    key: formData.get("key") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid data." };
   }
 
-  const project = await projectService.createProjectWithMember(actor, {
-    name: parsed.data.name,
-    description: parsed.data.description ?? null,
-  });
+  // redirect() ném NEXT_REDIRECT nên phải đứng ngoài try — catch chỉ ôm lỗi service.
+  let project: Awaited<ReturnType<typeof projectService.createProjectWithMember>>;
+  try {
+    project = await projectService.createProjectWithMember(actor, {
+      name: parsed.data.name,
+      description: parsed.data.description ?? null,
+      key: parsed.data.key || undefined,
+    });
+  } catch (error) {
+    return { error: message(error) };
+  }
   redirect(`/workspaces/${workspaceId}/projects/${project.id}`);
 }
 

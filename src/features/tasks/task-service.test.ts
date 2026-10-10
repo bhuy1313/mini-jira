@@ -39,6 +39,7 @@ interface MakeTaskInput {
 function makeTask(input: MakeTaskInput): TaskRecord {
   return {
     id: input.id,
+    key: null,
     projectId: input.projectId,
     workspaceId: input.workspaceId ?? WS,
     creatorId: input.creatorId,

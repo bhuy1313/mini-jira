@@ -63,4 +63,47 @@ test.describe("Project lifecycle (Owner)", () => {
 
     await cleanupUsers([ownerEmail]);
   });
+
+  test("project key assigns sequential task keys shown on cards and drawer", async ({
+    page,
+    request,
+  }) => {
+    const email = uniqueEmail("pk");
+    await registerUser(request, "Key Owner", email);
+    await signIn(page, email);
+    await createWorkspace(page, "E2E Keys Workspace");
+    const workspaceId = /\/workspaces\/([^/]+)$/.exec(page.url())![1];
+
+    await openProjects(page, workspaceId);
+    await page.getByRole("button", { name: "New project" }).click();
+    const dialog = page.getByRole("dialog", { name: "Create Project" });
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel("Project name").fill("Key Test Project");
+    await dialog.getByLabel("Project key").fill("QKX");
+    await dialog.getByRole("button", { name: "Create project" }).click();
+    await page.waitForURL(/\/projects\/[^/]+$/);
+
+    for (const title of ["First keyed task", "Second keyed task"]) {
+      await page.getByRole("button", { name: "Create task" }).click();
+      const taskDialog = page.getByRole("dialog", { name: "Create Task" });
+      await expect(taskDialog).toBeVisible();
+      await taskDialog.getByLabel("Task title").fill(title);
+      await taskDialog.getByRole("button", { name: "Create task" }).click();
+      await expect(taskDialog).toBeHidden();
+      await expect(page.locator(`input[value="${title}"]`)).toBeVisible();
+    }
+
+    // Cards show sequential keys
+    await expect(page.getByText("QKX-1", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("QKX-2", { exact: true }).first()).toBeVisible();
+
+    // Drawer header shows the key
+    const card = page.locator("li").filter({ has: page.locator('input[value="First keyed task"]') });
+    await card.getByRole("button", { name: "Open details" }).click();
+    const drawer = page.getByRole("dialog");
+    await expect(drawer).toBeVisible();
+    await expect(drawer.getByText("QKX-1", { exact: true })).toBeVisible();
+
+    await cleanupUsers([email]);
+  });
 });
