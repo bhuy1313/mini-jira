@@ -62,6 +62,13 @@ export type Account = Prisma.AccountModel
  */
 export type Verification = Prisma.VerificationModel
 /**
+ * Model NotificationPreference
+ * *
+ *  * Opt-out thông báo theo user + loại. Sparse: không có row = enabled.
+ *  * Thêm row khi user tắt, xóa row khi bật lại — không cần backfill.
+ */
+export type NotificationPreference = Prisma.NotificationPreferenceModel
+/**
  * Model Workspace
  * 
  */

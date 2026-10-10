@@ -4,9 +4,11 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type {
   CreateNotificationInput,
+  NotificationPreferenceRecord,
   NotificationPublisher,
   NotificationRecord,
   NotificationRepository,
+  NotificationType,
 } from "./notification-service";
 
 type RawNotification = {
@@ -75,6 +77,28 @@ export const prismaNotificationRepository: NotificationRepository = {
     await prisma.notification.updateMany({
       where: { userId, readAt: null },
       data: { readAt: new Date() },
+    });
+  },
+
+  async listPreferences(userId: string): Promise<NotificationPreferenceRecord[]> {
+    const rows = await prisma.notificationPreference.findMany({ where: { userId } });
+    return rows.map((r) => ({
+      userId: r.userId,
+      type: r.type as NotificationType,
+      enabled: r.enabled,
+    }));
+  },
+
+  async setPreference({ userId, type, enabled }): Promise<void> {
+    if (enabled) {
+      // Sparse default-on: bật lại = xóa row.
+      await prisma.notificationPreference.deleteMany({ where: { userId, type } });
+      return;
+    }
+    await prisma.notificationPreference.upsert({
+      where: { userId_type: { userId, type } },
+      create: { userId, type, enabled: false },
+      update: { enabled: false },
     });
   },
 };

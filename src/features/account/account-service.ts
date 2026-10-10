@@ -8,12 +8,15 @@ import {
   updateProfileSchema,
   type UpdateProfileInput,
 } from "@/features/account/account-schemas";
+import type { NotificationPreferences } from "@/features/notifications/notification-service";
 import { NotFoundError, ValidationError } from "@/features/authorization/errors";
 
 export interface AccountOverview {
   user: UserProfile;
   sessions: UserSession[];
   workspaces: UserWorkspaceOverview[];
+  /** Gắn ở queries layer (không qua AccountService) — tab Notifications. */
+  notificationPreferences?: NotificationPreferences;
 }
 
 export class AccountService {

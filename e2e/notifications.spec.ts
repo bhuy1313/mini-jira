@@ -140,4 +140,98 @@ test.describe("UC-014: Notifications", () => {
 
     await cleanupUsers([ownerEmail, memberEmail]);
   });
+
+  test("disabled types are never stored nor badge-counted", async ({
+    page,
+    request,
+  }) => {
+    const owner = uniqueEmail("pn-o");
+    const member = uniqueEmail("pn-m");
+    await registerUser(request, "Pref Owner", owner);
+    await registerUser(request, "Pref Member", member);
+    await signIn(page, owner);
+    await createWorkspace(page, "E2E Pref Workspace");
+    const workspaceId = /\/workspaces\/([^/]+)$/.exec(page.url())![1];
+    await addMember(page, workspaceId, member);
+
+    await openProjects(page, workspaceId);
+    const projectId = await createProject(page, "E2E Pref Project");
+    const prefTask = "Pref task";
+    await createTask(page, prefTask);
+
+    const ownerCard = page.locator("li").filter({ has: page.locator(`input[value="${prefTask}"]`) });
+    await ownerCard.getByRole("button", { name: "Open details" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.getByRole("dialog").getByLabel("Assignee").selectOption({ label: "Pref Member" });
+    await page.getByLabel("Close modal").click();
+
+    // Member signs in: invite + assignment = 2 unread
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.waitForURL(/\/auth$/);
+    await signIn(page, member);
+    await page.goto(`/workspaces/${workspaceId}/projects/${projectId}`);
+    await page.waitForURL(/\/projects\/[^/]+$/);
+    await expectUnread(page, 2);
+
+    // Member disables "New comments" in account settings
+    await page.goto("/account");
+    await page.getByRole("tab", { name: "Notifications" }).click();
+    const commentSwitch = page.getByRole("switch", { name: "New comments" });
+    await expect(commentSwitch).toBeVisible();
+    await commentSwitch.click();
+    await expect(commentSwitch).toHaveAttribute("aria-checked", "false");
+
+    // Owner comments → member (assignee) must NOT gain a notification
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.waitForURL(/\/auth$/);
+    await signIn(page, owner);
+    await page.goto(`/workspaces/${workspaceId}/projects/${projectId}`);
+    await page.waitForURL(/\/projects\/[^/]+$/);
+    const ownerCard2 = page.locator("li").filter({ has: page.locator(`input[value="${prefTask}"]`) });
+    await ownerCard2.getByRole("button", { name: "Open details" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.getByLabel("Comment content").fill("Muted comment");
+    await page.getByRole("button", { name: "Post comment" }).click();
+    await expect(page.getByText("Muted comment")).toBeVisible();
+    await page.getByLabel("Close modal").click();
+
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.waitForURL(/\/auth$/);
+    await signIn(page, member);
+    await page.goto(`/workspaces/${workspaceId}/projects/${projectId}`);
+    await page.waitForURL(/\/projects\/[^/]+$/);
+    await expectUnread(page, 2);
+    // Vượt qua chu kỳ poll/SSE mà badge không tăng → loại tắt không được lưu.
+    await page.waitForTimeout(4000);
+    await expectUnread(page, 2);
+
+    // Re-enable → comment mới lại sinh notification
+    await page.goto("/account");
+    await page.getByRole("tab", { name: "Notifications" }).click();
+    const commentSwitch2 = page.getByRole("switch", { name: "New comments" });
+    await commentSwitch2.click();
+    await expect(commentSwitch2).toHaveAttribute("aria-checked", "true");
+
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.waitForURL(/\/auth$/);
+    await signIn(page, owner);
+    await page.goto(`/workspaces/${workspaceId}/projects/${projectId}`);
+    await page.waitForURL(/\/projects\/[^/]+$/);
+    const ownerCard3 = page.locator("li").filter({ has: page.locator(`input[value="${prefTask}"]`) });
+    await ownerCard3.getByRole("button", { name: "Open details" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.getByLabel("Comment content").fill("Audible comment");
+    await page.getByRole("button", { name: "Post comment" }).click();
+    await expect(page.getByText("Audible comment")).toBeVisible();
+    await page.getByLabel("Close modal").click();
+
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.waitForURL(/\/auth$/);
+    await signIn(page, member);
+    await page.goto(`/workspaces/${workspaceId}/projects/${projectId}`);
+    await page.waitForURL(/\/projects\/[^/]+$/);
+    await expectUnread(page, 3);
+
+    await cleanupUsers([owner, member]);
+  });
 });

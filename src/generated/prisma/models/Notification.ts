@@ -397,10 +397,6 @@ export type NotificationUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.NotificationScalarWhereInput | Prisma.NotificationScalarWhereInput[]
 }
 
-export type EnumNotificationTypeFieldUpdateOperationsInput = {
-  set?: $Enums.NotificationType
-}
-
 export type NotificationCreateWithoutUserInput = {
   id: string
   type: $Enums.NotificationType

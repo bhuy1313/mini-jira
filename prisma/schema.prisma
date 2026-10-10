@@ -30,6 +30,7 @@ model User {
   activities         Activity[]
   attachments        Attachment[]
   notifications      Notification[]
+  notificationPrefs  NotificationPreference[]
   apiKeys            ApiKey[]
   worklogs           Worklog[]
 
@@ -117,6 +118,23 @@ enum NotificationType {
   NewComment
   WorkspaceInvited
   ProjectArchived
+}
+
+/**
+ * Opt-out thông báo theo user + loại. Sparse: không có row = enabled.
+ * Thêm row khi user tắt, xóa row khi bật lại — không cần backfill.
+ */
+model NotificationPreference {
+  userId    String
+  type      NotificationType
+  enabled   Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, type])
+  @@index([userId])
+  @@map("notification_preference")
 }
 
 model Workspace {

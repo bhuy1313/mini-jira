@@ -208,6 +208,7 @@ export type UserWhereInput = {
   activities?: Prisma.ActivityListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
   notifications?: Prisma.NotificationListRelationFilter
+  notificationPrefs?: Prisma.NotificationPreferenceListRelationFilter
   apiKeys?: Prisma.ApiKeyListRelationFilter
   worklogs?: Prisma.WorklogListRelationFilter
 }
@@ -230,6 +231,7 @@ export type UserOrderByWithRelationInput = {
   activities?: Prisma.ActivityOrderByRelationAggregateInput
   attachments?: Prisma.AttachmentOrderByRelationAggregateInput
   notifications?: Prisma.NotificationOrderByRelationAggregateInput
+  notificationPrefs?: Prisma.NotificationPreferenceOrderByRelationAggregateInput
   apiKeys?: Prisma.ApiKeyOrderByRelationAggregateInput
   worklogs?: Prisma.WorklogOrderByRelationAggregateInput
 }
@@ -255,6 +257,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   activities?: Prisma.ActivityListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
   notifications?: Prisma.NotificationListRelationFilter
+  notificationPrefs?: Prisma.NotificationPreferenceListRelationFilter
   apiKeys?: Prisma.ApiKeyListRelationFilter
   worklogs?: Prisma.WorklogListRelationFilter
 }, "id" | "email">
@@ -303,6 +306,7 @@ export type UserCreateInput = {
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -325,6 +329,7 @@ export type UserUncheckedCreateInput = {
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -347,6 +352,7 @@ export type UserUpdateInput = {
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -369,6 +375,7 @@ export type UserUncheckedUpdateInput = {
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
@@ -485,6 +492,20 @@ export type UserUpdateOneRequiredWithoutAccountsNestedInput = {
   upsert?: Prisma.UserUpsertWithoutAccountsInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAccountsInput, Prisma.UserUpdateWithoutAccountsInput>, Prisma.UserUncheckedUpdateWithoutAccountsInput>
+}
+
+export type UserCreateNestedOneWithoutNotificationPrefsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutNotificationPrefsInput, Prisma.UserUncheckedCreateWithoutNotificationPrefsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutNotificationPrefsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutNotificationPrefsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutNotificationPrefsInput, Prisma.UserUncheckedCreateWithoutNotificationPrefsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutNotificationPrefsInput
+  upsert?: Prisma.UserUpsertWithoutNotificationPrefsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutNotificationPrefsInput, Prisma.UserUpdateWithoutNotificationPrefsInput>, Prisma.UserUncheckedUpdateWithoutNotificationPrefsInput>
 }
 
 export type UserCreateNestedOneWithoutMembershipsInput = {
@@ -646,6 +667,7 @@ export type UserCreateWithoutSessionsInput = {
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -667,6 +689,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -704,6 +727,7 @@ export type UserUpdateWithoutSessionsInput = {
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -725,6 +749,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
@@ -746,6 +771,7 @@ export type UserCreateWithoutAccountsInput = {
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -767,6 +793,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -804,6 +831,7 @@ export type UserUpdateWithoutAccountsInput = {
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -817,6 +845,111 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMemberUncheckedUpdateManyWithoutUserNestedInput
+  projectMemberships?: Prisma.ProjectMemberUncheckedUpdateManyWithoutUserNestedInput
+  createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
+  assignedTasks?: Prisma.TaskUncheckedUpdateManyWithoutAssigneeNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
+  activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
+  worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
+}
+
+export type UserCreateWithoutNotificationPrefsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMemberCreateNestedManyWithoutUserInput
+  projectMemberships?: Prisma.ProjectMemberCreateNestedManyWithoutUserInput
+  createdTasks?: Prisma.TaskCreateNestedManyWithoutCreatorInput
+  assignedTasks?: Prisma.TaskCreateNestedManyWithoutAssigneeInput
+  comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
+  activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
+  worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
+}
+
+export type UserUncheckedCreateWithoutNotificationPrefsInput = {
+  id: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMemberUncheckedCreateNestedManyWithoutUserInput
+  projectMemberships?: Prisma.ProjectMemberUncheckedCreateNestedManyWithoutUserInput
+  createdTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutCreatorInput
+  assignedTasks?: Prisma.TaskUncheckedCreateNestedManyWithoutAssigneeInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
+  activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
+  worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
+}
+
+export type UserCreateOrConnectWithoutNotificationPrefsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutNotificationPrefsInput, Prisma.UserUncheckedCreateWithoutNotificationPrefsInput>
+}
+
+export type UserUpsertWithoutNotificationPrefsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutNotificationPrefsInput, Prisma.UserUncheckedUpdateWithoutNotificationPrefsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutNotificationPrefsInput, Prisma.UserUncheckedCreateWithoutNotificationPrefsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutNotificationPrefsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutNotificationPrefsInput, Prisma.UserUncheckedUpdateWithoutNotificationPrefsInput>
+}
+
+export type UserUpdateWithoutNotificationPrefsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMemberUpdateManyWithoutUserNestedInput
+  projectMemberships?: Prisma.ProjectMemberUpdateManyWithoutUserNestedInput
+  createdTasks?: Prisma.TaskUpdateManyWithoutCreatorNestedInput
+  assignedTasks?: Prisma.TaskUpdateManyWithoutAssigneeNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
+  activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
+  worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
+}
+
+export type UserUncheckedUpdateWithoutNotificationPrefsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   memberships?: Prisma.WorkspaceMemberUncheckedUpdateManyWithoutUserNestedInput
   projectMemberships?: Prisma.ProjectMemberUncheckedUpdateManyWithoutUserNestedInput
   createdTasks?: Prisma.TaskUncheckedUpdateManyWithoutCreatorNestedInput
@@ -846,6 +979,7 @@ export type UserCreateWithoutMembershipsInput = {
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -867,6 +1001,7 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -904,6 +1039,7 @@ export type UserUpdateWithoutMembershipsInput = {
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -925,6 +1061,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
@@ -946,6 +1083,7 @@ export type UserCreateWithoutProjectMembershipsInput = {
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -967,6 +1105,7 @@ export type UserUncheckedCreateWithoutProjectMembershipsInput = {
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -1004,6 +1143,7 @@ export type UserUpdateWithoutProjectMembershipsInput = {
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -1025,6 +1165,7 @@ export type UserUncheckedUpdateWithoutProjectMembershipsInput = {
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
@@ -1046,6 +1187,7 @@ export type UserCreateWithoutCreatedTasksInput = {
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -1067,6 +1209,7 @@ export type UserUncheckedCreateWithoutCreatedTasksInput = {
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -1093,6 +1236,7 @@ export type UserCreateWithoutAssignedTasksInput = {
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -1114,6 +1258,7 @@ export type UserUncheckedCreateWithoutAssignedTasksInput = {
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -1151,6 +1296,7 @@ export type UserUpdateWithoutCreatedTasksInput = {
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -1172,6 +1318,7 @@ export type UserUncheckedUpdateWithoutCreatedTasksInput = {
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
@@ -1204,6 +1351,7 @@ export type UserUpdateWithoutAssignedTasksInput = {
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -1225,6 +1373,7 @@ export type UserUncheckedUpdateWithoutAssignedTasksInput = {
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
@@ -1247,6 +1396,7 @@ export type UserCreateWithoutWorklogsInput = {
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
@@ -1268,6 +1418,7 @@ export type UserUncheckedCreateWithoutWorklogsInput = {
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -1305,6 +1456,7 @@ export type UserUpdateWithoutWorklogsInput = {
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
@@ -1326,6 +1478,7 @@ export type UserUncheckedUpdateWithoutWorklogsInput = {
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -1346,6 +1499,7 @@ export type UserCreateWithoutCommentsInput = {
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -1367,6 +1521,7 @@ export type UserUncheckedCreateWithoutCommentsInput = {
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -1404,6 +1559,7 @@ export type UserUpdateWithoutCommentsInput = {
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -1425,6 +1581,7 @@ export type UserUncheckedUpdateWithoutCommentsInput = {
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
@@ -1446,6 +1603,7 @@ export type UserCreateWithoutActivitiesInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -1467,6 +1625,7 @@ export type UserUncheckedCreateWithoutActivitiesInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -1504,6 +1663,7 @@ export type UserUpdateWithoutActivitiesInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -1525,6 +1685,7 @@ export type UserUncheckedUpdateWithoutActivitiesInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
@@ -1546,6 +1707,7 @@ export type UserCreateWithoutAttachmentsInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -1567,6 +1729,7 @@ export type UserUncheckedCreateWithoutAttachmentsInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -1604,6 +1767,7 @@ export type UserUpdateWithoutAttachmentsInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -1625,6 +1789,7 @@ export type UserUncheckedUpdateWithoutAttachmentsInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
@@ -1646,6 +1811,7 @@ export type UserCreateWithoutNotificationsInput = {
   comments?: Prisma.CommentCreateNestedManyWithoutAuthorInput
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
@@ -1667,6 +1833,7 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   comments?: Prisma.CommentUncheckedCreateNestedManyWithoutAuthorInput
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
@@ -1704,6 +1871,7 @@ export type UserUpdateWithoutNotificationsInput = {
   comments?: Prisma.CommentUpdateManyWithoutAuthorNestedInput
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
@@ -1725,6 +1893,7 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   comments?: Prisma.CommentUncheckedUpdateManyWithoutAuthorNestedInput
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
@@ -1747,6 +1916,7 @@ export type UserCreateWithoutApiKeysInput = {
   activities?: Prisma.ActivityCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogCreateNestedManyWithoutAuthorInput
 }
 
@@ -1768,6 +1938,7 @@ export type UserUncheckedCreateWithoutApiKeysInput = {
   activities?: Prisma.ActivityUncheckedCreateNestedManyWithoutActorInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedCreateNestedManyWithoutUserInput
   worklogs?: Prisma.WorklogUncheckedCreateNestedManyWithoutAuthorInput
 }
 
@@ -1805,6 +1976,7 @@ export type UserUpdateWithoutApiKeysInput = {
   activities?: Prisma.ActivityUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUpdateManyWithoutAuthorNestedInput
 }
 
@@ -1826,6 +1998,7 @@ export type UserUncheckedUpdateWithoutApiKeysInput = {
   activities?: Prisma.ActivityUncheckedUpdateManyWithoutActorNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  notificationPrefs?: Prisma.NotificationPreferenceUncheckedUpdateManyWithoutUserNestedInput
   worklogs?: Prisma.WorklogUncheckedUpdateManyWithoutAuthorNestedInput
 }
 
@@ -1845,6 +2018,7 @@ export type UserCountOutputType = {
   activities: number
   attachments: number
   notifications: number
+  notificationPrefs: number
   apiKeys: number
   worklogs: number
 }
@@ -1860,6 +2034,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   activities?: boolean | UserCountOutputTypeCountActivitiesArgs
   attachments?: boolean | UserCountOutputTypeCountAttachmentsArgs
   notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
+  notificationPrefs?: boolean | UserCountOutputTypeCountNotificationPrefsArgs
   apiKeys?: boolean | UserCountOutputTypeCountApiKeysArgs
   worklogs?: boolean | UserCountOutputTypeCountWorklogsArgs
 }
@@ -1947,6 +2122,13 @@ export type UserCountOutputTypeCountNotificationsArgs<ExtArgs extends runtime.Ty
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountNotificationPrefsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NotificationPreferenceWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountApiKeysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.ApiKeyWhereInput
 }
@@ -1977,6 +2159,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   activities?: boolean | Prisma.User$activitiesArgs<ExtArgs>
   attachments?: boolean | Prisma.User$attachmentsArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
+  notificationPrefs?: boolean | Prisma.User$notificationPrefsArgs<ExtArgs>
   apiKeys?: boolean | Prisma.User$apiKeysArgs<ExtArgs>
   worklogs?: boolean | Prisma.User$worklogsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -2024,6 +2207,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   activities?: boolean | Prisma.User$activitiesArgs<ExtArgs>
   attachments?: boolean | Prisma.User$attachmentsArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
+  notificationPrefs?: boolean | Prisma.User$notificationPrefsArgs<ExtArgs>
   apiKeys?: boolean | Prisma.User$apiKeysArgs<ExtArgs>
   worklogs?: boolean | Prisma.User$worklogsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -2044,6 +2228,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     activities: Prisma.$ActivityPayload<ExtArgs>[]
     attachments: Prisma.$AttachmentPayload<ExtArgs>[]
     notifications: Prisma.$NotificationPayload<ExtArgs>[]
+    notificationPrefs: Prisma.$NotificationPreferencePayload<ExtArgs>[]
     apiKeys: Prisma.$ApiKeyPayload<ExtArgs>[]
     worklogs: Prisma.$WorklogPayload<ExtArgs>[]
   }
@@ -2459,6 +2644,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   activities<T extends Prisma.User$activitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$activitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   attachments<T extends Prisma.User$attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   notifications<T extends Prisma.User$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  notificationPrefs<T extends Prisma.User$notificationPrefsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationPrefsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPreferencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   apiKeys<T extends Prisma.User$apiKeysArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$apiKeysArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   worklogs<T extends Prisma.User$worklogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$worklogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WorklogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -3127,6 +3313,30 @@ export type User$notificationsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.NotificationScalarFieldEnum | Prisma.NotificationScalarFieldEnum[]
+}
+
+/**
+ * User.notificationPrefs
+ */
+export type User$notificationPrefsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NotificationPreference
+   */
+  select?: Prisma.NotificationPreferenceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NotificationPreference
+   */
+  omit?: Prisma.NotificationPreferenceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NotificationPreferenceInclude<ExtArgs> | null
+  where?: Prisma.NotificationPreferenceWhereInput
+  orderBy?: Prisma.NotificationPreferenceOrderByWithRelationInput | Prisma.NotificationPreferenceOrderByWithRelationInput[]
+  cursor?: Prisma.NotificationPreferenceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NotificationPreferenceScalarFieldEnum | Prisma.NotificationPreferenceScalarFieldEnum[]
 }
 
 /**

@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import {
+  BellIcon,
   BoardsIcon,
   KeyIcon,
   LaptopIcon,
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/icons";
 import { ThemeAppearanceSection } from "@/components/theme/theme-toggle";
 import type { AccountOverview } from "@/features/account/account-service";
+import { NotificationPreferencesForm } from "@/features/notifications/components/notification-preferences-form";
 import { AccountHeader } from "@/features/account/components/account-header";
 import { PasswordForm } from "@/features/account/components/password-form";
 import { ProfileForm } from "@/features/account/components/profile-form";
@@ -18,7 +20,7 @@ import { SessionsList } from "@/features/account/components/sessions-list";
 import { WorkspacesSummary } from "@/features/account/components/workspaces-summary";
 import { cn } from "@/lib/cn";
 
-type TabKey = "profile" | "appearance" | "security" | "sessions" | "workspaces";
+type TabKey = "profile" | "appearance" | "notifications" | "security" | "sessions" | "workspaces";
 
 export function AccountPageView({ overview }: { overview: AccountOverview }) {
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
@@ -31,6 +33,7 @@ export function AccountPageView({ overview }: { overview: AccountOverview }) {
   }> = [
     { key: "profile", label: "Profile", icon: UserIcon },
     { key: "appearance", label: "Appearance", icon: SunIcon },
+    { key: "notifications", label: "Notifications", icon: BellIcon },
     { key: "security", label: "Security & Password", icon: KeyIcon },
     {
       key: "sessions",
@@ -101,6 +104,18 @@ export function AccountPageView({ overview }: { overview: AccountOverview }) {
       <div>
         {activeTab === "profile" && <ProfileForm user={overview.user} />}
         {activeTab === "appearance" && <ThemeAppearanceSection />}
+        {activeTab === "notifications" && (
+          <NotificationPreferencesForm
+            initialPreferences={
+              overview.notificationPreferences ?? {
+                TaskAssigned: true,
+                NewComment: true,
+                WorkspaceInvited: true,
+                ProjectArchived: true,
+              }
+            }
+          />
+        )}
         {activeTab === "security" && <PasswordForm />}
         {activeTab === "sessions" && <SessionsList sessions={overview.sessions} />}
         {activeTab === "workspaces" && (

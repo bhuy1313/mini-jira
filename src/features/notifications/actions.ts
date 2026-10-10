@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { publishNotifyRead } from "@/features/live/live-publisher";
-import { createNotificationService } from "@/features/notifications/notification-service";
+import {
+  createNotificationService,
+  NOTIFICATION_TYPES,
+  type NotificationType,
+} from "@/features/notifications/notification-service";
 import { prismaNotificationRepository } from "@/features/notifications/prisma-notification-repository";
 import { getSessionUser } from "@/features/workspaces/session";
 
@@ -30,4 +34,18 @@ export async function markAllNotificationsReadAction(): Promise<void> {
   await notificationService.markAllNotificationsRead(userId);
   revalidatePath("/workspaces", "layout");
   publishNotifyRead(userId);
+}
+
+/** Bật/tắt một loại notification của chính user. */
+export async function setNotificationPreferenceAction(
+  type: string,
+  enabled: boolean,
+): Promise<{ error?: string }> {
+  const userId = await requireUserId();
+  if (!(NOTIFICATION_TYPES as string[]).includes(type)) {
+    return { error: "Unknown notification type." };
+  }
+  await notificationService.setPreference(userId, type as NotificationType, enabled);
+  revalidatePath("/account");
+  return {};
 }
