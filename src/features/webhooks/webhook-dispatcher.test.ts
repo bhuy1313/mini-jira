@@ -93,12 +93,73 @@ describe("Webhook Dispatcher", () => {
 
     const mockFetch = vi.fn().mockRejectedValue(new Error("Connection refused"));
 
-    const dispatcher = createWebhookDispatcher(repo, mockFetch);
+    const dispatcher = createWebhookDispatcher(repo, mockFetch, { delayFn: () => Promise.resolve() });
     const log = await dispatcher.dispatchToWebhook(mockWebhook, mockContext);
 
+    expect(mockFetch).toHaveBeenCalledTimes(3);
     expect(log.success).toBe(false);
     expect(log.statusCode).toBeNull();
     expect(log.responseBody).toContain("Connection refused");
+    expect(recordedLogs.length).toBe(1);
+  });
+
+  it("retries once then succeeds after a transient 500", async () => {
+    const { repo, recordedLogs } = makeMockRepo();
+
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: 500,
+        ok: false,
+        text: vi.fn().mockResolvedValue("boom"),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        text: vi.fn().mockResolvedValue("ok"),
+      } as unknown as Response);
+
+    const dispatcher = createWebhookDispatcher(repo, mockFetch, { delayFn: () => Promise.resolve() });
+    const log = await dispatcher.dispatchToWebhook(mockWebhook, mockContext);
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(log.success).toBe(true);
+    expect(log.statusCode).toBe(200);
+    expect(recordedLogs.length).toBe(1);
+  });
+
+  it("does not retry client errors (400)", async () => {
+    const { repo } = makeMockRepo();
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 400,
+      ok: false,
+      text: vi.fn().mockResolvedValue("bad request"),
+    } as unknown as Response);
+
+    const dispatcher = createWebhookDispatcher(repo, mockFetch, { delayFn: () => Promise.resolve() });
+    const log = await dispatcher.dispatchToWebhook(mockWebhook, mockContext);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(log.success).toBe(false);
+    expect(log.statusCode).toBe(400);
+  });
+
+  it("gives up after max attempts on persistent 503 and notes the attempt count", async () => {
+    const { repo, recordedLogs } = makeMockRepo();
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 503,
+      ok: false,
+      text: vi.fn().mockResolvedValue("unavailable"),
+    } as unknown as Response);
+
+    const dispatcher = createWebhookDispatcher(repo, mockFetch, { delayFn: () => Promise.resolve() });
+    const log = await dispatcher.dispatchToWebhook(mockWebhook, mockContext);
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(log.success).toBe(false);
+    expect(log.responseBody).toContain("After 3 attempts");
     expect(recordedLogs.length).toBe(1);
   });
 });
