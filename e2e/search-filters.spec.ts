@@ -157,4 +157,37 @@ test.describe("Search & Filters (Mốc 6 — FR-080..FR-085)", () => {
     await cleanupUsers([ownerEmail, memberEmail]);
     return Promise.resolve();
   });
+
+  test("finds tasks by key (KEY-123) even when the title does not match", async ({
+    page,
+    request,
+  }) => {
+    const email = uniqueEmail("sk");
+    await registerUser(request, "Key Searcher", email);
+    await signIn(page, email);
+    await createWorkspace(page, "E2E Key Search Workspace");
+    const workspaceId = /\/workspaces\/([^/]+)$/.exec(page.url())![1];
+
+    await openProjects(page, workspaceId);
+    await page.getByRole("button", { name: "New project" }).click();
+    const projDialog = page.getByRole("dialog", { name: "Create Project" });
+    await expect(projDialog).toBeVisible();
+    await projDialog.getByLabel("Project name").fill("Key Search Project");
+    await projDialog.getByLabel("Project key").fill("SKX");
+    await projDialog.getByRole("button", { name: "Create project" }).click();
+    await page.waitForURL(/\/projects\/[^/]+$/);
+
+    await createTask(page, "Completely unrelated title words");
+
+    const search = page.getByLabel("Search tasks");
+    await search.fill("SKX-1");
+    await page.waitForURL(/\?q=SKX-1/);
+    await expect(taskCard(page, "Completely unrelated title words")).toBeVisible();
+
+    await search.fill("SKX-9");
+    await page.waitForURL(/\?q=SKX-9/);
+    await expect(page.getByText("No tasks match your filters.")).toBeVisible();
+
+    await cleanupUsers([email]);
+  });
 });

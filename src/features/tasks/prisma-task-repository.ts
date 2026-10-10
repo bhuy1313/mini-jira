@@ -284,6 +284,10 @@ export const prismaTaskRepository: TaskRepository = {
       }
 
       const extra = extraConditions.length > 0 ? ` AND ${extraConditions.join(" AND ")}` : "";
+      // Tìm theo key (PRJ-123): ILIKE trên cột key, thoát wildcard của user.
+      // Đặt sau extra để chiếm $idx hiện tại, trước LIMIT.
+      const keyParamIdx = idx++;
+      params.push(`%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
       const limitClause = take !== undefined ? ` LIMIT $${idx}` : "";
       const limitParams: unknown[] = take !== undefined ? [take] : [];
       const sql = `
@@ -299,7 +303,7 @@ export const prismaTaskRepository: TaskRepository = {
         JOIN "status" s ON t."statusId" = s.id
         LEFT JOIN "sprint" sp ON t."sprintId" = sp.id
         WHERE t."projectId" = $1
-          AND (t."search_vector" IS NULL OR t."search_vector" @@ websearch_to_tsquery('simple', $2))
+          AND (t."search_vector" IS NULL OR t."search_vector" @@ websearch_to_tsquery('simple', $2) OR t."key" ILIKE $${keyParamIdx} ESCAPE '\\')
           ${extra}
         ORDER BY rank DESC, s.position ASC, t.position ASC
         ${limitClause}
@@ -372,6 +376,8 @@ export const prismaTaskRepository: TaskRepository = {
       }
 
       const extra = extraConditions.length > 0 ? ` AND ${extraConditions.join(" AND ")}` : "";
+      const keyParamIdx = idx++;
+      params.push(`%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
       const sql = `
         SELECT t.id, t.key, t."projectId", t.title, t.description,
           t."statusId", t."sprintId", t.priority, t."dueDate",
@@ -386,7 +392,7 @@ export const prismaTaskRepository: TaskRepository = {
         LEFT JOIN "sprint" sp ON t."sprintId" = sp.id
         WHERE p."workspaceId" = $1
           AND p."archivedAt" IS NULL
-          AND (t."search_vector" IS NULL OR t."search_vector" @@ websearch_to_tsquery('simple', $2))
+          AND (t."search_vector" IS NULL OR t."search_vector" @@ websearch_to_tsquery('simple', $2) OR t."key" ILIKE $${keyParamIdx} ESCAPE '\\')
           ${extra}
         ORDER BY rank DESC, t."updatedAt" DESC
       `;
