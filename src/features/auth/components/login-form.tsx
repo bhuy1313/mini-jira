@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
@@ -82,6 +83,12 @@ export function LoginForm() {
       <Button type="submit" disabled={isSubmitting} className="w-full" size="lg">
         {isSubmitting ? "Signing in…" : "Sign in"}
       </Button>
+
+      <p className="text-center text-xs text-ink-faint">
+        <Link href="/auth/forgot-password" className="font-medium text-primary-ink hover:underline">
+          Forgot your password?
+        </Link>
+      </p>
     </form>
   );
 }

@@ -5,6 +5,11 @@ import { nextCookies } from "better-auth/next-js";
 
 import { hasValidPassword, PASSWORD_POLICY_MESSAGE } from "@/features/auth/password-policy";
 import { prisma } from "@/lib/prisma";
+import {
+  emailSender,
+  resetPasswordTemplate,
+  verifyEmailTemplate,
+} from "@/lib/email";
 
 function getBaseUrl(): string {
   if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
@@ -42,6 +47,19 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     maxPasswordLength: 128,
+    // Không cấu hình = endpoint quên mật khẩu câm. Sender tự no-op khi thiếu
+    // RESEND_API_KEY nên dev/E2E không vỡ.
+    sendResetPassword: async ({ user, url }) => {
+      await emailSender.send(resetPasswordTemplate(user.email, url));
+    },
+  },
+  emailVerification: {
+    // Gửi ngay khi đăng ký; KHÔNG bật requireEmailVerification ở đây — bật nó
+    // sẽ khóa user hiện tại/E2E chưa verify. Đó là quyết định product riêng.
+    sendOnSignUp: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      await emailSender.send(verifyEmailTemplate(user.email, url));
+    },
   },
   rateLimit: {
     // Disabled in dev. In production it stays on unless explicitly lifted

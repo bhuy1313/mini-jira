@@ -97,4 +97,18 @@ test.describe("Account Management (Milestone 21)", () => {
     await expect(page.getByRole("heading", { name: "Summary WS" })).toBeVisible();
     await expect(page.getByText("Owner", { exact: true })).toBeVisible();
   });
+
+  test("password reset request succeeds without a configured mailer (log-only mode)", async ({
+    request,
+  }) => {
+    const email = uniqueEmail("account-reset");
+    emails.push(email);
+    await registerUser(request, "Reset User", email);
+
+    const res = await request.post("/api/auth/request-password-reset", {
+      headers: { Origin: "http://localhost:3000" },
+      data: { email, redirectTo: "/auth/reset-password" },
+    });
+    expect(res.ok()).toBe(true);
+  });
 });
