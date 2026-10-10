@@ -73,6 +73,11 @@ export interface TimesheetMemberInput {
   image?: string | null;
 }
 
+/**
+ * Day-bucket key in SERVER-local time — pinned via TZ="Asia/Ho_Chi_Minh" in
+ * .env (dev Windows and Vercel default to different zones, which would split
+ * the same worklog into different days per environment).
+ */
 export function toISODateString(d: Date): string {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
