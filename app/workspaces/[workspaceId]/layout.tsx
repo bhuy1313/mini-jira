@@ -1,15 +1,23 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
 import { ThemeQuickToggle } from "@/components/theme/theme-toggle";
 import { ChevronRightIcon } from "@/components/ui/icons";
-import { LogoutButton } from "@/features/auth/components/logout-button";
-import { NotificationBell } from "@/features/notifications/components/notification-bell";
-import { getNotificationData } from "@/features/notifications/queries";
 import { WorkspaceNav } from "@/features/workspaces/components/workspace-nav";
-import { WorkspaceSwitcher } from "@/features/workspaces/components/workspace-switcher";
-import { getWorkspaceContext, getUserWorkspaces } from "@/features/workspaces/queries";
-import { getSessionUser } from "@/features/workspaces/session";
+import { requireActor } from "@/features/workspaces/session";
+import {
+  BellSkeleton,
+  CrumbSkeleton,
+  FooterSkeleton,
+  MobileAccountSlot,
+  NotificationBellSlot,
+  SwitcherSkeleton,
+  UserFooterSlot,
+  WorkspaceCrumbSlot,
+  WorkspaceSwitcherSlot,
+} from "./_slots";
 
 export const dynamic = "force-dynamic";
 
@@ -21,14 +29,12 @@ export default async function WorkspaceLayout({
   params: Promise<{ workspaceId: string }>;
 }) {
   const { workspaceId } = await params;
-  const [ctx, notificationData, user, workspaces] = await Promise.all([
-    getWorkspaceContext(workspaceId),
-    getNotificationData(),
-    getSessionUser(),
-    getUserWorkspaces(),
-  ]);
-  const { ws, actor } = ctx;
-  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : actor.userId.charAt(0).toUpperCase();
+  // Minimal auth gate (session + membership) — same redirect semantics as
+  // before: non-members go to /workspaces. Everything else (workspace name,
+  // session user, workspace list, notifications) streams in via slots below
+  // so navigation never stalls behind the slowest query.
+  const actor = await requireActor(workspaceId).catch(() => null);
+  if (!actor) redirect("/workspaces");
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -49,11 +55,9 @@ export default async function WorkspaceLayout({
 
           {/* Workspace Switcher in dedicated header section (avoids overflow clipping) */}
           <div className="shrink-0 border-b border-rule/70 p-3 bg-panel/50">
-            <WorkspaceSwitcher
-              workspaces={workspaces}
-              currentWorkspaceId={workspaceId}
-              variant="dropdown"
-            />
+            <Suspense fallback={<SwitcherSkeleton />}>
+              <WorkspaceSwitcherSlot workspaceId={workspaceId} variant="dropdown" />
+            </Suspense>
           </div>
 
           {/* Nav items scroll independently inside sidebar if content overflows */}
@@ -63,26 +67,9 @@ export default async function WorkspaceLayout({
 
           {/* Fixed Footer: User profile & Logout - ALWAYS visible at viewport bottom */}
           <div className="shrink-0 border-t border-rule p-3 bg-panel">
-            <div className="flex items-center justify-between rounded-xl border border-rule/70 bg-paper/60 p-2 transition-colors hover:border-rule-strong hover:bg-paper">
-              <Link
-                href="/account"
-                className="group flex min-w-0 flex-1 items-center gap-2.5 text-xs text-ink-soft hover:text-ink transition-colors focus-visible:outline-none"
-                title="Account Settings"
-              >
-                <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary-soft text-xs font-bold text-primary-ink group-hover:ring-1 group-hover:ring-primary shadow-2xs">
-                  {userInitial}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-ink group-hover:text-primary leading-tight">
-                    {user?.name || "Account"}
-                  </p>
-                  <p className="truncate text-[10px] text-ink-faint leading-tight mt-0.5">
-                    {user?.email || actor.role}
-                  </p>
-                </div>
-              </Link>
-              <LogoutButton iconOnly />
-            </div>
+            <Suspense fallback={<FooterSkeleton />}>
+              <UserFooterSlot actor={actor} />
+            </Suspense>
           </div>
         </aside>
 
@@ -107,14 +94,14 @@ export default async function WorkspaceLayout({
                     Workspaces
                   </Link>
                   <ChevronRightIcon className="size-3.5 shrink-0 text-ink-faint" />
-                  <span className="truncate font-medium text-ink">{ws.name}</span>
+                  <Suspense fallback={<CrumbSkeleton />}>
+                    <WorkspaceCrumbSlot workspaceId={workspaceId} />
+                  </Suspense>
                 </div>
                 <div className="lg:hidden">
-                  <WorkspaceSwitcher
-                    workspaces={workspaces}
-                    currentWorkspaceId={workspaceId}
-                    variant="dropdown"
-                  />
+                  <Suspense fallback={<SwitcherSkeleton />}>
+                    <WorkspaceSwitcherSlot workspaceId={workspaceId} variant="dropdown" />
+                  </Suspense>
                 </div>
               </div>
 
@@ -122,26 +109,17 @@ export default async function WorkspaceLayout({
                 <CommandPaletteTrigger />
                 <ThemeQuickToggle />
                 <div className="hidden sm:block">
-                  <NotificationBell
-                    workspaceId={workspaceId}
-                    notifications={notificationData.notifications}
-                    unreadCount={notificationData.unreadCount}
-                  />
+                  <Suspense fallback={<BellSkeleton />}>
+                    <NotificationBellSlot workspaceId={workspaceId} />
+                  </Suspense>
                 </div>
                 <div className="lg:hidden flex items-center gap-2">
-                  <NotificationBell
-                    workspaceId={workspaceId}
-                    notifications={notificationData.notifications}
-                    unreadCount={notificationData.unreadCount}
-                  />
-                  <Link
-                    href="/account"
-                    className="grid size-7 place-items-center rounded-full bg-primary-soft text-xs font-semibold text-primary-ink"
-                    title="Account Settings"
-                  >
-                    {userInitial}
-                  </Link>
-                  <LogoutButton iconOnly />
+                  <Suspense fallback={<BellSkeleton />}>
+                    <NotificationBellSlot workspaceId={workspaceId} />
+                  </Suspense>
+                  <Suspense fallback={<BellSkeleton />}>
+                    <MobileAccountSlot actor={actor} />
+                  </Suspense>
                 </div>
               </div>
             </div>
