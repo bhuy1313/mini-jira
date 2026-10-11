@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createEmailSender,
   resetPasswordTemplate,
+  verifyCodeTemplate,
   verifyEmailTemplate,
   workspaceAddedTemplate,
 } from "./email";
@@ -71,5 +72,12 @@ describe("Email templates", () => {
     const added = workspaceAddedTemplate("u@x.com", "Acme", "ws-1");
     expect(added.text).toContain("Acme");
     expect(added.text).toContain("/workspaces/ws-1");
+  });
+
+  it("verify code template chứa mã OTP", () => {
+    const tpl = verifyCodeTemplate("u@x.com", "482916");
+    expect(tpl.to).toBe("u@x.com");
+    expect(tpl.subject).toContain("482916");
+    expect(tpl.text).toContain("482916");
   });
 });

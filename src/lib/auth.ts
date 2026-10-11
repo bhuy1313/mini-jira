@@ -2,12 +2,14 @@ import { betterAuth } from "better-auth/minimal";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { emailOTP } from "better-auth/plugins";
 
 import { hasValidPassword, PASSWORD_POLICY_MESSAGE } from "@/features/auth/password-policy";
 import { prisma } from "@/lib/prisma";
 import {
   emailSender,
   resetPasswordTemplate,
+  verifyCodeTemplate,
   verifyEmailTemplate,
 } from "@/lib/email";
 
@@ -54,12 +56,14 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    // Gửi ngay khi đăng ký; KHÔNG bật requireEmailVerification ở đây — bật nó
-    // sẽ khóa user hiện tại/E2E chưa verify. Đó là quyết định product riêng.
+    // Link verify giữ làm fallback; luồng chính là mã OTP 6 số (emailOTP plugin).
     sendOnSignUp: true,
     sendVerificationEmail: async ({ user, url }) => {
       await emailSender.send(verifyEmailTemplate(user.email, url));
     },
+    // Bật gate ở prod; E2E=1 tắt để suite cũ (đăng ký qua API, không đọc mail)
+    // tiếp tục chạy — gate có spec OTP riêng chạy không E2E=1.
+    requireEmailVerification: process.env.E2E !== "1",
   },
   rateLimit: {
     // Disabled in dev. In production it stays on unless explicitly lifted
@@ -83,5 +87,20 @@ export const auth = betterAuth({
       }
     }),
   },
-  plugins: [nextCookies()],
+  plugins: [
+    nextCookies(),
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 300,
+      allowedAttempts: 3,
+      sendVerificationOnSignUp: true,
+      // Chống brute-force phụ (chính vẫn là 3 attempts/code + hết hạn 5 phút):
+      // 10/phút/IP thay vì default 3 — đủ cho luồng nhập sai + resend của người
+      // thật và cho E2E (3 test dùng ~5 lượt gọi từ cùng IP localhost).
+      rateLimit: { window: 60, max: 10 },
+      sendVerificationOTP: async ({ email, otp }) => {
+        await emailSender.send(verifyCodeTemplate(email, otp));
+      },
+    }),
+  ],
 });

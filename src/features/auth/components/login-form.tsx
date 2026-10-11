@@ -88,6 +88,12 @@ export function LoginForm() {
         <Link href="/auth/forgot-password" className="font-medium text-primary-ink hover:underline">
           Forgot your password?
         </Link>
+        <span className="mx-1.5" aria-hidden>
+          ·
+        </span>
+        <Link href="/auth/verify-code" className="font-medium text-primary-ink hover:underline">
+          Verify your email
+        </Link>
       </p>
     </form>
   );

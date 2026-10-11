@@ -48,7 +48,7 @@ export function RegisterForm() {
         return;
       }
 
-      router.replace("/dashboard");
+      router.replace(`/auth/verify-code?email=${encodeURIComponent(email)}`);
       router.refresh();
     } catch {
       setError("Could not create the account at this time. Please try again.");

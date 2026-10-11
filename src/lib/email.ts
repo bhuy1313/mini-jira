@@ -127,6 +127,21 @@ export function resetPasswordTemplate(to: string, url: string): SendEmailInput {
   };
 }
 
+export function verifyCodeTemplate(to: string, otp: string): SendEmailInput {
+  return {
+    to,
+    subject: `Your Mini Jira verification code: ${otp}`,
+    text: [
+      "Welcome to Mini Jira!",
+      "",
+      `Your verification code is: ${otp}`,
+      "",
+      "Enter it in the app within 5 minutes to verify your email.",
+      "If you did not create this account, you can ignore this email.",
+    ].join("\n"),
+  };
+}
+
 export function workspaceAddedTemplate(
   to: string,
   workspaceName: string,
