@@ -15,26 +15,25 @@ import {
 describe("timesheet-service", () => {
   describe("date helpers", () => {
     it("toISODateString formats Date as YYYY-MM-DD", () => {
-      const d = new Date(2026, 9, 2); // Note: month is 0-indexed, 9 = October
+      const d = new Date("2026-10-02T12:00:00+07:00");
       expect(toISODateString(d)).toBe("2026-10-02");
     });
 
     it("getWeekDateRange starts on Monday and ends on Sunday", () => {
-      // Wednesday, Oct 7, 2026
-      const wednesday = new Date(2026, 9, 7);
+      // Wednesday, Oct 7, 2026 (giờ VN tường minh — đúng mọi TZ server)
+      const wednesday = new Date("2026-10-07T12:00:00+07:00");
       const { startDate, endDate } = getWeekDateRange(wednesday);
 
       expect(toISODateString(startDate)).toBe("2026-10-05"); // Monday
-      expect(startDate.getHours()).toBe(0);
-      expect(startDate.getMinutes()).toBe(0);
+      // Ranh giới là instant nửa đêm theo zone app (+07), đúng mọi TZ server.
+      expect(startDate.toISOString()).toBe("2026-10-04T17:00:00.000Z");
+      expect(endDate.toISOString()).toBe("2026-10-11T16:59:59.999Z");
 
       expect(toISODateString(endDate)).toBe("2026-10-11"); // Sunday
-      expect(endDate.getHours()).toBe(23);
-      expect(endDate.getMinutes()).toBe(59);
     });
 
     it("getMonthDateRange starts on 1st and ends on last day of month", () => {
-      const midMonth = new Date(2026, 9, 15); // October
+      const midMonth = new Date("2026-10-15T12:00:00+07:00"); // October
       const { startDate, endDate } = getMonthDateRange(midMonth);
 
       expect(toISODateString(startDate)).toBe("2026-10-01");
@@ -42,8 +41,8 @@ describe("timesheet-service", () => {
     });
 
     it("generateTimesheetDays creates continuous days with weekend flags", () => {
-      const start = new Date(2026, 9, 5); // Mon
-      const end = new Date(2026, 9, 11); // Sun
+      const start = new Date("2026-10-05T12:00:00+07:00"); // Mon
+      const end = new Date("2026-10-11T12:00:00+07:00"); // Sun
       const days = generateTimesheetDays(start, end);
 
       expect(days).toHaveLength(7);
@@ -68,7 +67,7 @@ describe("timesheet-service", () => {
       { id: "user-3", name: "Charlie Le", email: "charlie@example.com" },
     ];
 
-    const days = generateTimesheetDays(new Date(2026, 9, 5), new Date(2026, 9, 11));
+    const days = generateTimesheetDays(new Date("2026-10-05T12:00:00+07:00"), new Date("2026-10-11T12:00:00+07:00"));
 
     it("handles zero worklogs gracefully with empty matrix", () => {
       const report = calculateTimesheetReport([], members, days);
@@ -93,7 +92,7 @@ describe("timesheet-service", () => {
           projectId: "proj-1",
           projectName: "Backend Core",
           timeSpentMinutes: 240, // 4h
-          startedAt: new Date(2026, 9, 5, 9, 0), // Mon Oct 5
+          startedAt: new Date("2026-10-05T09:00:00+07:00"), // Mon Oct 5
           description: "Schema design",
           createdAt: new Date(),
         },
@@ -107,7 +106,7 @@ describe("timesheet-service", () => {
           projectId: "proj-1",
           projectName: "Backend Core",
           timeSpentMinutes: 240, // 4h
-          startedAt: new Date(2026, 9, 5, 14, 0), // Mon Oct 5
+          startedAt: new Date("2026-10-05T14:00:00+07:00"), // Mon Oct 5
           description: "Prisma migrations",
           createdAt: new Date(),
         },
@@ -121,7 +120,7 @@ describe("timesheet-service", () => {
           projectId: "proj-1",
           projectName: "Backend Core",
           timeSpentMinutes: 480, // 8h
-          startedAt: new Date(2026, 9, 6, 9, 0), // Tue Oct 6
+          startedAt: new Date("2026-10-06T09:00:00+07:00"), // Tue Oct 6
           description: null,
           createdAt: new Date(),
         },
@@ -135,7 +134,7 @@ describe("timesheet-service", () => {
           projectId: "proj-2",
           projectName: "Web App",
           timeSpentMinutes: 300, // 5h
-          startedAt: new Date(2026, 9, 5, 10, 0), // Mon Oct 5
+          startedAt: new Date("2026-10-05T10:00:00+07:00"), // Mon Oct 5
           description: "Component layout",
           createdAt: new Date(),
         },
@@ -181,7 +180,7 @@ describe("timesheet-service", () => {
           projectId: "proj-1",
           projectName: "Backend Core",
           timeSpentMinutes: 120,
-          startedAt: new Date(2026, 9, 5),
+          startedAt: new Date("2026-10-05T12:00:00+07:00"),
           description: "Consultation",
           createdAt: new Date(),
         },
@@ -209,7 +208,7 @@ describe("timesheet-service", () => {
             projectId: "p1",
             projectName: "Project One",
             timeSpentMinutes: 60,
-            startedAt: new Date(2026, 9, 5),
+            startedAt: new Date("2026-10-05T12:00:00+07:00"),
             description: null,
             createdAt: new Date(),
           },
@@ -232,8 +231,8 @@ describe("timesheet-service", () => {
       };
 
       const report = await service.getTimesheetReport(actor, {
-        startDate: new Date(2026, 9, 5),
-        endDate: new Date(2026, 9, 11),
+        startDate: new Date("2026-10-05T12:00:00+07:00"),
+        endDate: new Date("2026-10-11T12:00:00+07:00"),
       });
 
       expect(report.grandTotalMinutes).toBe(60);

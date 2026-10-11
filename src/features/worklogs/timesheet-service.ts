@@ -1,6 +1,12 @@
 import type { Actor } from "@/features/authorization/actor";
 import { effectiveRole, requirePermission } from "@/features/authorization/actor";
 import { canViewWorklogs } from "@/features/authorization/permissions";
+import {
+  appTimeZone,
+  toZoneDateString,
+  zoneMidnightInstant,
+  zoneParts,
+} from "@/lib/timezone";
 
 export interface TimesheetFilter {
   startDate: Date;
@@ -74,43 +80,46 @@ export interface TimesheetMemberInput {
 }
 
 /**
- * Day-bucket key in SERVER-local time — pinned via TZ="Asia/Ho_Chi_Minh" in
- * .env (dev Windows and Vercel default to different zones, which would split
- * the same worklog into different days per environment).
+ * Day-bucket key theo múi giờ của app (mặc định Asia/Ho_Chi_Minh) — không còn
+ * phụ thuộc TZ của server nên dev, Vercel và CI chia ngày giống hệt nhau.
  */
 export function toISODateString(d: Date): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return toZoneDateString(d);
 }
 
 /**
- * Returns Monday 00:00:00.000 to Sunday 23:59:59.999 for the week containing `targetDate`.
+ * Returns Monday 00:00 to Sunday 23:59:59.999 (theo zone của app) cho tuần
+ * chứa `targetDate`. Trả về instant — so sánh DB dùng trực tiếp được.
  */
 export function getWeekDateRange(targetDate: Date = new Date()): { startDate: Date; endDate: Date } {
-  const day = targetDate.getDay();
+  const zone = appTimeZone();
+  const parts = zoneParts(targetDate, zone);
   // In JS: 0=Sun, 1=Mon, ..., 6=Sat
-  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const diffToMonday = parts.weekday === 0 ? -6 : 1 - parts.weekday;
 
-  const monday = new Date(targetDate);
-  monday.setDate(targetDate.getDate() + diffToMonday);
-  monday.setHours(0, 0, 0, 0);
+  const mondayBase = Date.UTC(parts.year, parts.month - 1, parts.day + diffToMonday);
+  const mondayParts = zoneParts(new Date(mondayBase), zone);
+  const startDate = zoneMidnightInstant(mondayParts.year, mondayParts.month, mondayParts.day, zone);
+  const endDate = new Date(startDate.getTime() + 7 * 86400_000 - 1);
 
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
-
-  return { startDate: monday, endDate: sunday };
+  return { startDate, endDate };
 }
 
 /**
- * Returns 1st day 00:00:00.000 to last day 23:59:59.999 for the month containing `targetDate`.
+ * Returns ngày 1 00:00 tới cuối tháng 23:59:59.999 (theo zone của app) cho
+ * tháng chứa `targetDate`.
  */
 export function getMonthDateRange(targetDate: Date = new Date()): { startDate: Date; endDate: Date } {
-  const start = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1, 0, 0, 0, 0);
-  const end = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
-  return { startDate: start, endDate: end };
+  const zone = appTimeZone();
+  const parts = zoneParts(targetDate, zone);
+  const startDate = zoneMidnightInstant(parts.year, parts.month, 1, zone);
+  const nextMonth = parts.month === 12
+    ? { year: parts.year + 1, month: 1 }
+    : { year: parts.year, month: parts.month + 1 };
+  const endDate = new Date(
+    zoneMidnightInstant(nextMonth.year, nextMonth.month, 1, zone).getTime() - 1,
+  );
+  return { startDate, endDate };
 }
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -119,23 +128,26 @@ const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
  * Generates an array of day descriptors for each calendar day between startDate and endDate inclusive.
  */
 export function generateTimesheetDays(startDate: Date, endDate: Date): TimesheetDaySummary[] {
+  const zone = appTimeZone();
   const days: TimesheetDaySummary[] = [];
-  const curr = new Date(startDate);
-  curr.setHours(0, 0, 0, 0);
+  const startParts = zoneParts(startDate, zone);
+  const endIso = toZoneDateString(endDate, zone);
 
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
-
-  while (curr <= end) {
-    const dayOfWeek = curr.getDay();
+  // Lặp theo lịch zone (UTC-day + zoneMidnightInstant cho exact, kể cả DST),
+  // tối đa 400 ngày để range bệnh hoạn không treo page.
+  const base = Date.UTC(startParts.year, startParts.month - 1, startParts.day);
+  for (let i = 0; i < 400; i++) {
+    const t = new Date(base + i * 86400_000);
+    const midnight = zoneMidnightInstant(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate(), zone);
+    const parts = zoneParts(midnight, zone);
+    if (parts.iso > endIso) break;
     days.push({
-      date: toISODateString(curr),
-      dayLabel: `${DAY_NAMES[dayOfWeek]} ${curr.getDate()}`,
-      dayOfWeek,
-      isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+      date: parts.iso,
+      dayLabel: `${DAY_NAMES[parts.weekday]} ${parts.day}`,
+      dayOfWeek: parts.weekday,
+      isWeekend: parts.weekday === 0 || parts.weekday === 6,
       totalMinutes: 0,
     });
-    curr.setDate(curr.getDate() + 1);
   }
 
   return days;

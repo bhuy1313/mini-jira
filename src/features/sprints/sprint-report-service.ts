@@ -3,6 +3,12 @@ import { requirePermission } from "@/features/authorization/actor";
 import { canViewTasks } from "@/features/authorization/permissions";
 import { UnauthorizedError, ValidationError } from "@/features/authorization/errors";
 import { formatShortDay } from "@/lib/dates";
+import {
+  appTimeZone,
+  toZoneDateString,
+  zoneMidnightInstant,
+  zoneParts,
+} from "@/lib/timezone";
 
 export interface BurndownDayPoint {
   date: string; // "YYYY-MM-DD"
@@ -99,12 +105,9 @@ export interface SprintReportRepository {
   getSprintWorklogs(taskIds: string[]): Promise<RawWorklogData[]>;
 }
 
-/** Formats a Date to "YYYY-MM-DD" local/UTC string */
+/** Formats a Date to "YYYY-MM-DD" theo zone của app (không phụ thuộc TZ server). */
 export function toISODateString(d: Date): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return toZoneDateString(d);
 }
 
 /** Formats date for display label, e.g. "Oct 2" */
@@ -112,19 +115,21 @@ export function formatDayLabel(d: Date): string {
   return formatShortDay(d);
 }
 
-/** Generates array of consecutive Date objects between start and end inclusive */
+/** Generates array of consecutive zone-day midnights between start and end inclusive */
 export function generateSprintDays(startDate: Date, endDate: Date): Date[] {
+  const zone = appTimeZone();
+  const startParts = zoneParts(startDate, zone);
+  const endIso = toZoneDateString(endDate, zone);
   const days: Date[] = [];
-  const current = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-  const target = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-
-  if (current > target) {
-    return [new Date(current)];
+  const base = Date.UTC(startParts.year, startParts.month - 1, startParts.day);
+  for (let i = 0; i < 400; i++) {
+    const t = new Date(base + i * 86400_000);
+    const midnight = zoneMidnightInstant(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate(), zone);
+    if (toZoneDateString(midnight, zone) > endIso) break;
+    days.push(midnight);
   }
-
-  while (current <= target) {
-    days.push(new Date(current));
-    current.setDate(current.getDate() + 1);
+  if (days.length === 0) {
+    return [zoneMidnightInstant(startParts.year, startParts.month, startParts.day, zone)];
   }
   return days;
 }
@@ -269,7 +274,7 @@ export function calculateSprintReport(
     }
   }
 
-  const isCompleted = now > new Date(sprintEnd.getFullYear(), sprintEnd.getMonth(), sprintEnd.getDate(), 23, 59, 59, 999);
+  const isCompleted = toZoneDateString(now) > toZoneDateString(sprintEnd);
 
   // Initial scope at start of sprint (day 0)
   const initialTasks = enrichedTasks.filter((t) => !t.addedAfterStart);
@@ -286,8 +291,10 @@ export function calculateSprintReport(
   for (let i = 0; i < totalDays; i++) {
     const day = sprintDays[i];
     const dateStr = toISODateString(day);
-    const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59, 999);
-    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0, 0);
+    // Ranh giới ngày theo zone (không dùng getFullYear/getDate server-local).
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dayStart = zoneMidnightInstant(y, m, d);
+    const dayEnd = new Date(dayStart.getTime() + 86400_000 - 1);
 
     // 1. Ideal line: Linear descent from initialScope to 0
     const ideal = N > 0 ? Math.max(0, Math.round(initialScope * (1 - i / N) * 10) / 10) : 0;

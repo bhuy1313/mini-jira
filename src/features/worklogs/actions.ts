@@ -13,6 +13,7 @@ import {
   createTimesheetService,
   type TimesheetReport,
 } from "./timesheet-service";
+import { zoneMidnightInstant } from "@/lib/timezone";
 import { prismaWorkspaceRepository } from "@/features/workspaces/prisma-workspace-repository";
 
 const worklogService = createWorklogService({
@@ -191,11 +192,14 @@ export async function getTimesheetReportAction(
 ): Promise<{ report?: TimesheetReport; error?: string }> {
   try {
     const actor = await requireActor(workspaceId);
-    const startDate = new Date(input.startDate);
-    startDate.setHours(0, 0, 0, 0);
-
-    const endDate = new Date(input.endDate);
-    endDate.setHours(23, 59, 59, 999);
+    // "YYYY-MM-DD" → ranh giới ngày theo zone của app (không dùng setHours
+    // server-local — Vercel chạy UTC, dev chạy +07).
+    const [sy, sm, sd] = input.startDate.split("-").map(Number);
+    const [ey, em, ed] = input.endDate.split("-").map(Number);
+    const startDate = zoneMidnightInstant(sy, sm, sd);
+    const endDate = new Date(
+      zoneMidnightInstant(ey, em, ed).getTime() + 86400_000 - 1,
+    );
 
     const report = await timesheetService.getTimesheetReport(actor, {
       startDate,

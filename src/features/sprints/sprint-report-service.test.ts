@@ -15,8 +15,8 @@ import {
 describe("sprint-report-service", () => {
   describe("generateSprintDays", () => {
     it("generates correct array of consecutive days", () => {
-      const start = new Date(2026, 9, 1); // 2026-10-01
-      const end = new Date(2026, 9, 5); // 2026-10-05
+      const start = new Date("2026-10-01T12:00:00+07:00"); // 2026-10-01
+      const end = new Date("2026-10-05T12:00:00+07:00"); // 2026-10-05
       const days = generateSprintDays(start, end);
       expect(days.length).toBe(5);
       expect(toISODateString(days[0])).toBe("2026-10-01");
@@ -24,7 +24,7 @@ describe("sprint-report-service", () => {
     });
 
     it("handles single-day sprint", () => {
-      const d = new Date(2026, 9, 1);
+      const d = new Date("2026-10-01T12:00:00+07:00");
       const days = generateSprintDays(d, d);
       expect(days.length).toBe(1);
       expect(toISODateString(days[0])).toBe("2026-10-01");
