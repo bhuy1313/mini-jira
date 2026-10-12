@@ -61,9 +61,11 @@ export const auth = betterAuth({
     sendVerificationEmail: async ({ user, url }) => {
       await emailSender.send(verifyEmailTemplate(user.email, url));
     },
-    // Bật gate ở prod; E2E=1 tắt để suite cũ (đăng ký qua API, không đọc mail)
-    // tiếp tục chạy — gate có spec OTP riêng chạy không E2E=1.
-    requireEmailVerification: process.env.E2E !== "1",
+    // Gate chỉ bật khi có cờ REQUIRE_EMAIL_VERIFICATION=1 (và không phải E2E).
+    // Lý do: Resend test mode (chưa verify domain) chỉ gửi được cho email chủ
+    // tài khoản — bật gate khi chưa có domain là khóa mọi đăng ký mới.
+    requireEmailVerification:
+      process.env.E2E !== "1" && process.env.REQUIRE_EMAIL_VERIFICATION === "1",
   },
   rateLimit: {
     // Disabled in dev. In production it stays on unless explicitly lifted

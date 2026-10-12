@@ -1,4 +1,5 @@
-// Email OTP verification gate — CHẠY KHÔNG E2E=1 (gate tắt khi E2E=1).
+// Email OTP verification gate — chạy KHÔNG E2E=1 và CÓ REQUIRE_EMAIL_VERIFICATION=1
+// (local .env đã có sẵn flag; Vercel prod để trống cho tới khi verify domain Resend).
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
