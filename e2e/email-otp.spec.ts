@@ -1,5 +1,8 @@
-// Email OTP verification gate — chạy KHÔNG E2E=1 và CÓ REQUIRE_EMAIL_VERIFICATION=1
-// (local .env đã có sẵn flag; Vercel prod để trống cho tới khi verify domain Resend).
+// Email OTP verification gate — chạy KHÔNG E2E=1, CÓ REQUIRE_EMAIL_VERIFICATION=1
+// và CÓ EMAIL_ENABLED=1 (local .env đã có sẵn cả hai; Vercel prod để trống cả hai
+// cho tới khi verify domain Resend).
+// Đặt E2E_EMAIL=0 để skip khi chạy suite trên server đóng băng (xem docs/frozen-features.md).
+test.skip(process.env.E2E_EMAIL === "0", "email frozen on this server");
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";

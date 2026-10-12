@@ -5,6 +5,8 @@ import { cleanupUsers, createWorkspace, registerUser, signIn, uniqueEmail } from
 // Yêu cầu storage thật: chạy trên dev server (local disk) hoặc prod có R2 /
 // ATTACHMENT_UPLOAD_DIR. Prod build trần (driver noop) fail là đúng —
 // tab đính kèm bị ẩn, không phải bug.
+// Đặt E2E_STORAGE=0 để skip khi chạy suite trên server đóng băng (xem docs/frozen-features.md).
+test.skip(process.env.E2E_STORAGE === "0", "attachments frozen on this server");
 test.setTimeout(180_000);
 
 async function openProjects(page: Page, workspaceId: string): Promise<void> {
