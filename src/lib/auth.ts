@@ -8,6 +8,7 @@ import { hasValidPassword, PASSWORD_POLICY_MESSAGE } from "@/features/auth/passw
 import { prisma } from "@/lib/prisma";
 import {
   emailSender,
+  isEmailEnabled,
   resetPasswordTemplate,
   verifyCodeTemplate,
   verifyEmailTemplate,
@@ -52,6 +53,7 @@ export const auth = betterAuth({
     // Không cấu hình = endpoint quên mật khẩu câm. Sender tự no-op khi thiếu
     // RESEND_API_KEY nên dev/E2E không vỡ.
     sendResetPassword: async ({ user, url }) => {
+      if (!isEmailEnabled()) return;
       await emailSender.send(resetPasswordTemplate(user.email, url));
     },
   },
@@ -59,13 +61,17 @@ export const auth = betterAuth({
     // Link verify giữ làm fallback; luồng chính là mã OTP 6 số (emailOTP plugin).
     sendOnSignUp: true,
     sendVerificationEmail: async ({ user, url }) => {
+      if (!isEmailEnabled()) return;
       await emailSender.send(verifyEmailTemplate(user.email, url));
     },
     // Gate chỉ bật khi có cờ REQUIRE_EMAIL_VERIFICATION=1 (và không phải E2E).
     // Lý do: Resend test mode (chưa verify domain) chỉ gửi được cho email chủ
     // tài khoản — bật gate khi chưa có domain là khóa mọi đăng ký mới.
+    // Ràng buộc thêm isEmailEnabled: bật gate mà tắt mail là khóa cứng.
     requireEmailVerification:
-      process.env.E2E !== "1" && process.env.REQUIRE_EMAIL_VERIFICATION === "1",
+      process.env.E2E !== "1" &&
+      process.env.REQUIRE_EMAIL_VERIFICATION === "1" &&
+      isEmailEnabled(),
   },
   rateLimit: {
     // Disabled in dev. In production it stays on unless explicitly lifted
@@ -101,6 +107,7 @@ export const auth = betterAuth({
       // thật và cho E2E (3 test dùng ~5 lượt gọi từ cùng IP localhost).
       rateLimit: { window: 60, max: 10 },
       sendVerificationOTP: async ({ email, otp }) => {
+        if (!isEmailEnabled()) return;
         await emailSender.send(verifyCodeTemplate(email, otp));
       },
     }),

@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { AuthShell } from "@/features/auth/components/auth-shell";
 import { AuthSwitcher } from "@/features/auth/components/auth-switcher";
 import { auth } from "@/lib/auth";
+import { isEmailEnabled } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -19,7 +20,7 @@ export default async function AuthPage() {
 
   return (
     <AuthShell>
-      <AuthSwitcher />
+      <AuthSwitcher showEmailLinks={isEmailEnabled()} />
     </AuthShell>
   );
 }

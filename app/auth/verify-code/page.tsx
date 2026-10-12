@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { AuthShell } from "@/features/auth/components/auth-shell";
 import { VerifyCodeForm } from "@/features/auth/components/verify-code-form";
+import { isEmailEnabled } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Verify your email" };
 
@@ -10,6 +12,8 @@ export default async function VerifyCodePage({
 }: {
   searchParams?: Promise<{ email?: string }>;
 }) {
+  // Tính năng mail đang đóng băng: đá về đăng nhập thay vì trang chết.
+  if (!isEmailEnabled()) redirect("/auth");
   const email = (await searchParams)?.email?.trim() ?? "";
 
   return (

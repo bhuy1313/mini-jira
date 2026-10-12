@@ -9,7 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/inputs";
 import { authClient } from "@/lib/auth-client";
 
-export function LoginForm() {
+export function LoginForm({ showEmailLinks = true }: { showEmailLinks?: boolean }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,17 +84,19 @@ export function LoginForm() {
         {isSubmitting ? "Signing in…" : "Sign in"}
       </Button>
 
-      <p className="text-center text-xs text-ink-faint">
-        <Link href="/auth/forgot-password" className="font-medium text-primary-ink hover:underline">
-          Forgot your password?
-        </Link>
-        <span className="mx-1.5" aria-hidden>
-          ·
-        </span>
-        <Link href="/auth/verify-code" className="font-medium text-primary-ink hover:underline">
-          Verify your email
-        </Link>
-      </p>
+      {showEmailLinks ? (
+        <p className="text-center text-xs text-ink-faint">
+          <Link href="/auth/forgot-password" className="font-medium text-primary-ink hover:underline">
+            Forgot your password?
+          </Link>
+          <span className="mx-1.5" aria-hidden>
+            ·
+          </span>
+          <Link href="/auth/verify-code" className="font-medium text-primary-ink hover:underline">
+            Verify your email
+          </Link>
+        </p>
+      ) : null}
     </form>
   );
 }

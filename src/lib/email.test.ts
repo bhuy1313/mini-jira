@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createEmailSender,
+  isEmailEnabled,
   resetPasswordTemplate,
   verifyCodeTemplate,
   verifyEmailTemplate,
@@ -60,8 +61,7 @@ describe("Email sender", () => {
   });
 });
 
-describe("Email templates", () => {
-  it("verify/reset/invite chứa link và địa chỉ nhận", () => {
+describe("Email templates", () => {  it("verify/reset/invite chứa link và địa chỉ nhận", () => {
     const verify = verifyEmailTemplate("u@x.com", "https://app/verify?token=t");
     expect(verify.to).toBe("u@x.com");
     expect(verify.text).toContain("https://app/verify?token=t");
@@ -79,5 +79,22 @@ describe("Email templates", () => {
     expect(tpl.to).toBe("u@x.com");
     expect(tpl.subject).toContain("482916");
     expect(tpl.text).toContain("482916");
+  });
+});
+
+describe("isEmailEnabled — công tắc đóng băng tính năng mail", () => {
+  it("true chỉ khi EMAIL_ENABLED=1", () => {
+    const prev = process.env.EMAIL_ENABLED;
+    try {
+      process.env.EMAIL_ENABLED = "1";
+      expect(isEmailEnabled()).toBe(true);
+      delete process.env.EMAIL_ENABLED;
+      expect(isEmailEnabled()).toBe(false);
+      process.env.EMAIL_ENABLED = "0";
+      expect(isEmailEnabled()).toBe(false);
+    } finally {
+      if (prev === undefined) delete process.env.EMAIL_ENABLED;
+      else process.env.EMAIL_ENABLED = prev;
+    }
   });
 });

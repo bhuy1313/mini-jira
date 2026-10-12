@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { AuthShell } from "@/features/auth/components/auth-shell";
 import { ForgotPasswordForm } from "@/features/auth/components/forgot-password-form";
+import { isEmailEnabled } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Forgot password" };
 
 export default function ForgotPasswordPage() {
+  if (!isEmailEnabled()) redirect("/auth");
   return (
     <AuthShell>
       <div>

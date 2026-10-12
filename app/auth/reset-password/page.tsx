@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { AuthShell } from "@/features/auth/components/auth-shell";
 import { ResetPasswordForm } from "@/features/auth/components/reset-password-form";
+import { isEmailEnabled } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Choose a new password" };
 
@@ -10,6 +12,7 @@ export default async function ResetPasswordPage({
 }: {
   searchParams?: Promise<{ token?: string }>;
 }) {
+  if (!isEmailEnabled()) redirect("/auth");
   const token = (await searchParams)?.token ?? "";
   return (
     <AuthShell>

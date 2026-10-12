@@ -24,7 +24,7 @@ const tabs: Array<{ mode: AuthMode; label: string }> = [
   { mode: "register", label: "Create account" },
 ];
 
-export function AuthSwitcher() {
+export function AuthSwitcher({ showEmailLinks = true }: { showEmailLinks?: boolean }) {
   const [mode, setMode] = useState<AuthMode>("login");
   const activeContent = content[mode];
 
@@ -63,7 +63,7 @@ export function AuthSwitcher() {
       </div>
 
       <div className="mt-7">
-        {mode === "login" ? <LoginForm /> : <RegisterForm />}
+        {mode === "login" ? <LoginForm showEmailLinks={showEmailLinks} /> : <RegisterForm />}
       </div>
     </>
   );

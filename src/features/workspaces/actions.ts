@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { UnauthorizedError } from "@/features/authorization/errors";
-import { emailSender, workspaceAddedTemplate } from "@/lib/email";
+import { emailSender, isEmailEnabled, workspaceAddedTemplate } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import {
   fieldErrorsFromZod,
@@ -141,16 +141,18 @@ export async function addMemberAction(
   } catch (error) {
     return { error: message(error) };
   }
-  // Mail "được thêm vào workspace" — fire-and-forget, no-op khi chưa cấu hình.
+  // Mail "được thêm vào workspace" — fire-and-forget, chỉ khi bật tính năng.
   // sender không bao giờ throw nên không await để add-member khỏi chậm theo HTTP mail.
-  void emailSender.send(
-    workspaceAddedTemplate(
-      user.email,
-      (await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } }))
-        ?.name ?? "Mini Jira",
-      workspaceId,
-    ),
-  );
+  if (isEmailEnabled()) {
+    void emailSender.send(
+      workspaceAddedTemplate(
+        user.email,
+        (await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } }))
+          ?.name ?? "Mini Jira",
+        workspaceId,
+      ),
+    );
+  }
   revalidatePath(`/workspaces/${workspaceId}/members`);
   return {};
 }

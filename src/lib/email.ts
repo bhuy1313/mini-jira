@@ -37,6 +37,15 @@ export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY);
 }
 
+/**
+ * Công tắc tính năng mail. TẮT mặc định — chỉ bật (="1") khi đã verify domain
+ * gửi (Resend test mode chỉ tới được inbox chủ tài khoản; để UI mail mở mà
+ * không gửi được là bẫy người dùng). Vercel: thêm env này khi domain xong.
+ */
+export function isEmailEnabled(): boolean {
+  return process.env.EMAIL_ENABLED === "1";
+}
+
 export function createEmailSender(
   fetchFn: typeof fetch = fetch,
   opts?: { apiKey?: string; from?: string },
