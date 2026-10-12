@@ -11,6 +11,7 @@ import {
   changeProjectMemberRoleAction,
   removeProjectMemberAction,
 } from "@/features/projects/project-member-actions";
+import { notifyCreated, notifyDeleted, notifyError, notifyUpdated } from "@/lib/notify";
 
 export interface ProjectMemberItem {
   userId: string;
@@ -69,8 +70,15 @@ function MemberRow({
   const [, startRoleTransition] = useTransition();
 
   const [removeState, doRemoveAction, removeChanging] = useActionState(
-    (_prev: { error?: string }) =>
-      removeProjectMemberAction(workspaceId, projectId, member.userId),
+    async (_prev: { error?: string }) => {
+      const res = await removeProjectMemberAction(workspaceId, projectId, member.userId);
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyDeleted("member");
+      }
+      return res;
+    },
     {},
   );
 
@@ -91,7 +99,12 @@ function MemberRow({
     setRoleError(undefined);
     startRoleTransition(async () => {
       const result = await changeProjectMemberRoleAction(workspaceId, projectId, member.userId, role);
-      if (result.error) setRoleError(result.error);
+      if (result.error) {
+        setRoleError(result.error);
+        notifyError(result.error);
+      } else {
+        notifyUpdated("member");
+      }
     });
   }
 
@@ -171,8 +184,15 @@ function AddMemberForm({
   workspaceId: string;
   projectId: string;
 }) {
-  const bound = (prev: { error?: string } | undefined, formData: FormData) =>
-    addProjectMemberAction(workspaceId, projectId, formData);
+  const bound = async (prev: { error?: string } | undefined, formData: FormData) => {
+    const res = await addProjectMemberAction(workspaceId, projectId, formData);
+    if (res?.error) {
+      notifyError(res.error);
+    } else {
+      notifyCreated("member");
+    }
+    return res;
+  };
   const [state, formAction, pending] = useActionState(bound, {});
 
   return (

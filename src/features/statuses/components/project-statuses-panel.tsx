@@ -15,6 +15,7 @@ import { CreateStatusButton } from "@/features/statuses/components/create-status
 import type { StatusRecord } from "@/features/statuses/status-service";
 import { getStatusDotClass } from "@/features/tasks/task-meta";
 import { cn } from "@/lib/cn";
+import { notifyDeleted, notifyError, notifyUpdated } from "@/lib/notify";
 
 function StatusRow({
   status,
@@ -37,14 +38,28 @@ function StatusRow({
   const [editError, setEditError] = useState<string | undefined>();
 
   const [deleteState, doDeleteAction, deletePending] = useActionState(
-    (_prev: { error?: string }) =>
-      deleteStatusAction(workspaceId, projectId, status.id),
+    async (_prev: { error?: string }) => {
+      const res = await deleteStatusAction(workspaceId, projectId, status.id);
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyDeleted("status");
+      }
+      return res;
+    },
     {},
   );
 
   const [doneState, doDoneAction, donePending] = useActionState(
-    (_prev: { error?: string }, formData: FormData) =>
-      updateStatusAction(workspaceId, projectId, status.id, formData),
+    async (_prev: { error?: string }, formData: FormData) => {
+      const res = await updateStatusAction(workspaceId, projectId, status.id, formData);
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyUpdated("status");
+      }
+      return res;
+    },
     {},
   );
 
@@ -57,11 +72,12 @@ function StatusRow({
     newOrder.splice(targetIdx, 0, moved);
 
     startTransition(async () => {
-      await reorderStatusesAction(
+      const res = await reorderStatusesAction(
         workspaceId,
         projectId,
         newOrder.map((s) => s.id),
       );
+      if (res?.error) notifyError(res.error);
     });
   }
 
@@ -72,7 +88,9 @@ function StatusRow({
     const res = await updateStatusAction(workspaceId, projectId, status.id, formData);
     if (res.error) {
       setEditError(res.error);
+      notifyError(res.error);
     } else {
+      notifyUpdated("status");
       setEditing(false);
     }
   }

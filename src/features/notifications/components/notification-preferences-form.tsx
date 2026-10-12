@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { cn } from "@/lib/cn";
+import { notifyError, notifyUpdated } from "@/lib/notify";
 import { setNotificationPreferenceAction } from "@/features/notifications/actions";
 import {
   NOTIFICATION_TYPES,
@@ -48,6 +49,9 @@ export function NotificationPreferencesForm({
       if (res?.error) {
         setPrefs(prev);
         setError(res.error);
+        notifyError(res.error);
+      } else {
+        notifyUpdated("notification settings");
       }
     });
   }

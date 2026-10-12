@@ -9,6 +9,7 @@ import { changeMemberRoleAction, removeMemberAction } from "@/features/workspace
 import { canChangeMemberRole, canRemoveMember, type Role } from "@/features/authorization/permissions";
 import type { MemberWithUser } from "@/features/workspaces/workspace-service";
 import { cn } from "@/lib/cn";
+import { notifyDeleted, notifyError, notifyUpdated } from "@/lib/notify";
 
 const ROLE_LABEL: Record<Role, string> = {
   Owner: "Owner",
@@ -33,15 +34,27 @@ function MemberCard({
   actorRole: Role;
   isSelf: boolean;
 }) {
-  const boundRole = (prev: { error?: string } | undefined, formData: FormData) => {
+  const boundRole = async (prev: { error?: string } | undefined, formData: FormData) => {
     formData.set("userId", member.userId);
-    return changeMemberRoleAction(workspaceId, formData);
+    const res = await changeMemberRoleAction(workspaceId, formData);
+    if (res?.error) {
+      notifyError(res.error);
+    } else {
+      notifyUpdated("member");
+    }
+    return res;
   };
   const [roleState, roleAction, rolePending] = useActionState(boundRole, {});
 
-  const boundRemove = (prev: { error?: string } | undefined, formData: FormData) => {
+  const boundRemove = async (prev: { error?: string } | undefined, formData: FormData) => {
     formData.set("userId", member.userId);
-    return removeMemberAction(workspaceId, formData);
+    const res = await removeMemberAction(workspaceId, formData);
+    if (res?.error) {
+      notifyError(res.error);
+    } else {
+      notifyDeleted("member");
+    }
+    return res;
   };
   const [removeState, removeAction, removePending] = useActionState(boundRemove, {});
 

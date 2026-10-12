@@ -11,6 +11,7 @@ import {
 } from "@/features/attachments/actions";
 import type { AttachmentRecord } from "@/features/attachments/attachment-service";
 import { formatDate } from "@/lib/dates";
+import { notifyCreated, notifyDeleted, notifyError } from "@/lib/notify";
 import { withMutation } from "@/lib/mutation-busy";
 import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
 
@@ -37,8 +38,15 @@ function AttachmentRow({
   const canDelete = isUploader || actorRole === "Owner" || actorRole === "Admin";
 
   const [deleteState, deleteAction, deletePending] = useActionState(
-    async (_prev: { error?: string }) =>
-      deleteAttachmentAction(workspaceId, projectId, attachment.id),
+    async (_prev: { error?: string }) => {
+      const res = await deleteAttachmentAction(workspaceId, projectId, attachment.id);
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyDeleted("attachment");
+      }
+      return res;
+    },
     {},
   );
 
@@ -104,7 +112,12 @@ export function AttachmentList({
       const res = await withMutation(() =>
         addAttachmentAction(workspaceId, projectId, realTaskId, formData),
       );
-      if (!res.error) setFileName("");
+      if (!res.error) {
+        setFileName("");
+        notifyCreated("attachment");
+      } else {
+        notifyError(res.error);
+      }
       return res;
     },
     {},

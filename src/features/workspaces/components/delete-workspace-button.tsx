@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { deleteWorkspaceAction } from "@/features/workspaces/actions";
+import { notifyError } from "@/lib/notify";
 
 export function DeleteWorkspaceButton({
   workspaceId,
@@ -14,8 +15,12 @@ export function DeleteWorkspaceButton({
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(
-    (_prev: { error?: string }, _formData: FormData) =>
-      deleteWorkspaceAction(workspaceId),
+    async (_prev: { error?: string }, _formData: FormData) => {
+      // Thành công thì action redirect về /workspaces — chỉ toast khi lỗi.
+      const res = await deleteWorkspaceAction(workspaceId);
+      if (res?.error) notifyError(res.error);
+      return res;
+    },
     {},
   );
 

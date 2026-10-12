@@ -10,6 +10,7 @@ import { canDeleteWorklog, canEditWorklog, type Role } from "@/features/authoriz
 import { ClockIcon, EditIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
+import { notifyDeleted, notifyError } from "@/lib/notify";
 import { formatDateTime } from "@/lib/dates";
 import { withMutation } from "@/lib/mutation-busy";
 
@@ -53,8 +54,13 @@ export function WorklogList({
     }
     setDeletingId(worklogId);
     startTransition(async () => {
-      await withMutation(() => deleteWorklogAction(workspaceId, projectId, worklogId));
+      const res = await withMutation(() => deleteWorklogAction(workspaceId, projectId, worklogId));
       setDeletingId(null);
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyDeleted("worklog");
+      }
       router.refresh();
     });
   };

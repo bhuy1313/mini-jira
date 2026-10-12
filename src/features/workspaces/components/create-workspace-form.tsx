@@ -13,15 +13,21 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/inputs";
 import { createWorkspaceAction } from "@/features/workspaces/actions";
+import { notifyError } from "@/lib/notify";
 import { createWorkspaceSchema } from "@/features/workspaces/workspace-schema";
 import type { FieldErrors } from "@/lib/validation";
 
 export function CreateWorkspaceForm() {
   const [state, formAction, pending] = useActionState(
-    (
+    async (
       _prev: { error?: string; fieldErrors?: FieldErrors },
       formData: FormData,
-    ) => createWorkspaceAction(formData),
+    ) => {
+      // Thành công thì action redirect (toast không kịp hiện) — chỉ toast khi lỗi.
+      const res = await createWorkspaceAction(formData);
+      if (res?.error) notifyError(res.error);
+      return res;
+    },
     {},
   );
 

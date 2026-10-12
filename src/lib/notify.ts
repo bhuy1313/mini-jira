@@ -17,6 +17,7 @@ export type NotifyKind =
   | "subtask"
   | "comment"
   | "project"
+  | "workspace"
   | "label"
   | "attachment"
   | "worklog"
@@ -31,6 +32,7 @@ const KIND_LABEL: Record<NotifyKind, string> = {
   subtask: "Sub-task",
   comment: "Comment",
   project: "Project",
+  workspace: "Workspace",
   label: "Label",
   attachment: "Attachment",
   worklog: "Work log",

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/inputs";
 import { Modal } from "@/components/ui/modal";
 import { PlusIcon } from "@/components/ui/icons";
 import { createCustomFieldAction } from "@/features/custom-fields/actions";
+import { notifyCreated, notifyError } from "@/lib/notify";
 import {
   CUSTOM_FIELD_TYPES,
   type CustomFieldType,
@@ -30,7 +31,10 @@ export function CreateCustomFieldModal({
     async (_prev: { error?: string }, formData: FormData) => {
       const res = await createCustomFieldAction(workspaceId, projectId, formData);
       if (!res?.error) {
+        notifyCreated("custom field");
         onClose();
+      } else {
+        notifyError(res.error);
       }
       return res;
     },

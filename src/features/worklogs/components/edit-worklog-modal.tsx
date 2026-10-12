@@ -8,6 +8,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { formatDuration, formatDurationDetailed, parseDuration } from "../duration";
 import { updateWorklogAction } from "../actions";
 import { withActionRetry } from "@/lib/action-retry";
+import { notifyError, notifyUpdated } from "@/lib/notify";
 import type { WorklogRecord } from "../worklog-service";
 
 interface EditWorklogModalProps {
@@ -38,7 +39,10 @@ export function EditWorklogModal({
         updateWorklogAction(workspaceId, projectId, worklog.id, formData),
       );
       if (!res?.error) {
+        notifyUpdated("worklog");
         onClose();
+      } else {
+        notifyError(res.error);
       }
       return res;
     },

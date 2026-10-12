@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/inputs";
 import { Modal } from "@/components/ui/modal";
 import { PlusIcon } from "@/components/ui/icons";
 import { createStatusAction } from "@/features/statuses/actions";
+import { notifyCreated, notifyError } from "@/lib/notify";
 
 export function CreateStatusModal({
   workspaceId,
@@ -24,7 +25,10 @@ export function CreateStatusModal({
     async (_prev: { error?: string }, formData: FormData) => {
       const res = await createStatusAction(workspaceId, projectId, formData);
       if (!res?.error) {
+        notifyCreated("status");
         onClose();
+      } else {
+        notifyError(res.error);
       }
       return res;
     },

@@ -13,6 +13,7 @@ import {
 } from "@/features/sprints/actions";
 import type { SprintRecord } from "@/features/sprints/sprint-service";
 import { formatDate } from "@/lib/dates";
+import { notifyDeleted, notifyError, notifyUpdated } from "@/lib/notify";
 import { withActionRetry } from "@/lib/action-retry";
 import { withMutation } from "@/lib/mutation-busy";
 
@@ -42,9 +43,18 @@ function SprintRow({
   const [editError, setEditError] = useState<string | undefined>();
 
   const [deleteState, doDeleteAction, deletePending] = useActionState(
-    (_prev: { error?: string }) =>
+    async (_prev: { error?: string }) => {
       // Sprint deletes are non-idempotent: gate refreshes, never retry.
-      withMutation(() => deleteSprintAction(workspaceId, projectId, sprint.id)),
+      const res = await withMutation(() =>
+        deleteSprintAction(workspaceId, projectId, sprint.id),
+      );
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyDeleted("sprint");
+      }
+      return res;
+    },
     {},
   );
 
@@ -58,13 +68,14 @@ function SprintRow({
 
     startTransition(async () => {
       // Reorder is idempotent (same final order) — safe to retry on abort.
-      await withActionRetry(() =>
+      const res = await withActionRetry(() =>
         reorderSprintsAction(
           workspaceId,
           projectId,
           newOrder.map((s) => s.id),
         ),
       );
+      if (res?.error) notifyError(res.error);
     });
   }
 
@@ -78,7 +89,9 @@ function SprintRow({
     );
     if (res.error) {
       setEditError(res.error);
+      notifyError(res.error);
     } else {
+      notifyUpdated("sprint");
       setEditing(false);
     }
   }

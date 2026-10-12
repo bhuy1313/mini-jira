@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CheckIcon, CloseIcon, TrashIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
+import { notifyCreated, notifyDeleted, notifyError, notifyUpdated } from "@/lib/notify";
 import { withActionRetry } from "@/lib/action-retry";
 import { withMutation } from "@/lib/mutation-busy";
 import { resolveRealTaskId, trackPendingTask } from "@/features/tasks/pending-task-ids";
@@ -81,7 +82,10 @@ function LabelRow({
       );
       if (!res?.error) {
         setEditing(false);
+        notifyUpdated("label");
         router.refresh();
+      } else {
+        notifyError(res.error);
       }
       return res;
     },
@@ -96,6 +100,11 @@ function LabelRow({
       const res = await withMutation(() =>
         deleteLabelAction(workspaceId, projectId, realId),
       );
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyDeleted("label");
+      }
       router.refresh();
       return res;
     },
@@ -241,6 +250,7 @@ export function ManageLabelsModal({
       );
       if (!res?.error && res?.label) {
         resolveCreate(res.label.id);
+        notifyCreated("label");
         // Swap the temp entry for the real one so follow-up edit/delete
         // use a server-known id even before props refresh.
         const realLabel = res.label;
@@ -253,6 +263,7 @@ export function ManageLabelsModal({
         router.refresh();
       } else {
         resolveCreate(null);
+        notifyError(res?.error);
         setLocalLabels(initialLabels);
       }
       return res;

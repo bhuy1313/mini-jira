@@ -7,6 +7,7 @@ import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/inputs";
 import { Spinner } from "@/components/ui/spinner";
 import { updateWorkspaceAction } from "@/features/workspaces/actions";
+import { notifyError, notifyUpdated } from "@/lib/notify";
 import { WorkspaceIconPicker } from "@/features/workspaces/components/workspace-icon-picker";
 
 export function SettingsForm({
@@ -23,8 +24,15 @@ export function SettingsForm({
   const [workspaceName, setWorkspaceName] = useState(name);
   const [selectedIconId, setSelectedIconId] = useState<string | null>(icon ?? null);
 
-  const bound = (prev: { error?: string } | undefined, formData: FormData) =>
-    updateWorkspaceAction(workspaceId, formData);
+  const bound = async (prev: { error?: string } | undefined, formData: FormData) => {
+    const res = await updateWorkspaceAction(workspaceId, formData);
+    if (res?.error) {
+      notifyError(res.error);
+    } else {
+      notifyUpdated("workspace");
+    }
+    return res;
+  };
   const [state, formAction, pending] = useActionState(bound, {});
 
   return (

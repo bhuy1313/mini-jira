@@ -7,6 +7,7 @@ import { CloseIcon, PlusIcon, UsersIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { Spinner } from "@/components/ui/spinner";
 import { addMemberAction } from "@/features/workspaces/actions";
+import { notifyCreated, notifyError } from "@/lib/notify";
 
 export function InviteMemberModal({
   open,
@@ -22,7 +23,10 @@ export function InviteMemberModal({
     async (_prev: { error?: string }, formData: FormData) => {
       const res = await addMemberAction(workspaceId, formData);
       if (!res?.error) {
+        notifyCreated("member");
         onClose();
+      } else {
+        notifyError(res.error);
       }
       return res;
     },

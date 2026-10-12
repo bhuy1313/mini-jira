@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/modal";
 import { Spinner } from "@/components/ui/spinner";
 import { createSprintAction } from "@/features/sprints/actions";
 import { withMutation } from "@/lib/mutation-busy";
+import { notifyCreated, notifyError } from "@/lib/notify";
 
 export function CreateSprintModal({
   open,
@@ -28,7 +29,10 @@ export function CreateSprintModal({
         createSprintAction(workspaceId, projectId, formData),
       );
       if (!res?.error) {
+        notifyCreated("sprint");
         onClose();
+      } else {
+        notifyError(res.error);
       }
       return res;
     },

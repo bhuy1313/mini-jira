@@ -8,6 +8,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { formatDurationDetailed, parseDuration } from "../duration";
 import { logWorkAction } from "../actions";
 import { withMutation } from "@/lib/mutation-busy";
+import { notifyCreated, notifyError } from "@/lib/notify";
 import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
 
 interface LogWorkModalProps {
@@ -39,7 +40,10 @@ export function LogWorkModal({
         logWorkAction(workspaceId, projectId, realTaskId, formData),
       );
       if (!res?.error) {
+        notifyCreated("worklog");
         onClose();
+      } else {
+        notifyError(res.error);
       }
       return res;
     },

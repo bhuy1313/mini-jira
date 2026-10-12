@@ -16,6 +16,7 @@ import { Input, Textarea } from "@/components/ui/inputs";
 import { Modal } from "@/components/ui/modal";
 import { Spinner } from "@/components/ui/spinner";
 import { createWorkspaceAction } from "@/features/workspaces/actions";
+import { notifyError } from "@/lib/notify";
 import { createWorkspaceSchema } from "@/features/workspaces/workspace-schema";
 import type { FieldErrors } from "@/lib/validation";
 import { WorkspaceIconPicker } from "@/features/workspaces/components/workspace-icon-picker";
@@ -32,10 +33,15 @@ export function CreateWorkspaceModal({
   const [selectedIconId, setSelectedIconId] = useState<string | null>("rocket");
 
   const [state, formAction, pending] = useActionState(
-    (
+    async (
       _prev: { error?: string; fieldErrors?: FieldErrors } | undefined,
       formData: FormData,
-    ) => createWorkspaceAction(formData),
+    ) => {
+      // Thành công thì action redirect (toast không kịp hiện) — chỉ toast khi lỗi.
+      const res = await createWorkspaceAction(formData);
+      if (res?.error) notifyError(res.error);
+      return res;
+    },
     {},
   );
 

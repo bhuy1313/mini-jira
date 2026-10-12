@@ -5,10 +5,18 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/inputs";
 import { addMemberAction } from "@/features/workspaces/actions";
+import { notifyCreated, notifyError } from "@/lib/notify";
 
 export function AddMemberForm({ workspaceId }: { workspaceId: string }) {
-  const bound = (prev: { error?: string } | undefined, formData: FormData) =>
-    addMemberAction(workspaceId, formData);
+  const bound = async (prev: { error?: string } | undefined, formData: FormData) => {
+    const res = await addMemberAction(workspaceId, formData);
+    if (res?.error) {
+      notifyError(res.error);
+    } else {
+      notifyCreated("member");
+    }
+    return res;
+  };
   const [state, formAction, pending] = useActionState(bound, {});
 
   return (

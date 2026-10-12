@@ -17,6 +17,7 @@ import {
   type CustomFieldRecord,
   type CustomFieldType,
 } from "@/features/custom-fields/custom-field-service";
+import { notifyDeleted, notifyError, notifyUpdated } from "@/lib/notify";
 
 function CustomFieldRow({
   field,
@@ -40,8 +41,15 @@ function CustomFieldRow({
   const [editError, setEditError] = useState<string | undefined>();
 
   const [deleteState, doDeleteAction, deletePending] = useActionState(
-    (_prev: { error?: string }) =>
-      deleteCustomFieldAction(workspaceId, projectId, field.id),
+    async (_prev: { error?: string }) => {
+      const res = await deleteCustomFieldAction(workspaceId, projectId, field.id);
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyDeleted("custom field");
+      }
+      return res;
+    },
     {},
   );
 
@@ -54,11 +62,12 @@ function CustomFieldRow({
     newOrder.splice(targetIdx, 0, moved);
 
     startTransition(async () => {
-      await reorderCustomFieldsAction(
+      const res = await reorderCustomFieldsAction(
         workspaceId,
         projectId,
         newOrder.map((f) => f.id),
       );
+      if (res?.error) notifyError(res.error);
     });
   }
 
@@ -69,7 +78,9 @@ function CustomFieldRow({
     const res = await updateCustomFieldAction(workspaceId, projectId, field.id, formData);
     if (res.error) {
       setEditError(res.error);
+      notifyError(res.error);
     } else {
+      notifyUpdated("custom field");
       setEditing(false);
     }
   }
