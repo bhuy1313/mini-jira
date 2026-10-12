@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { UserProfile } from "@/features/account/account-repository";
 import { updateProfileAction } from "@/features/account/actions";
 import { CheckIcon } from "@/components/ui/icons";
+import { notifyError, notifyUpdated } from "@/lib/notify";
 
 export function ProfileForm({ user }: { user: UserProfile }) {
   const router = useRouter();
@@ -29,8 +30,10 @@ export function ProfileForm({ user }: { user: UserProfile }) {
       const res = await updateProfileAction({ name: trimmed });
       if (!res.success) {
         setError(res.error || "Failed to update profile");
+        notifyError(res.error);
       } else {
         setSuccess("Profile updated successfully!");
+        notifyUpdated("profile");
         router.refresh();
       }
     });

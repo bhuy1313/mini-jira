@@ -9,6 +9,7 @@ import { PlusIcon } from "@/components/ui/icons";
 import { PRIORITIES } from "@/features/authorization/permissions";
 import type { StatusRecord } from "@/features/statuses/status-service";
 import { createRuleAction } from "@/features/automation/actions";
+import { notifyCreated, notifyError } from "@/lib/notify";
 import type {
   RuleActionType,
   RuleTriggerType,
@@ -39,7 +40,10 @@ export function CreateRuleModal({
     async (_prev: { error?: string }, formData: FormData) => {
       const res = await createRuleAction(workspaceId, projectId, formData);
       if (!res?.error) {
+        notifyCreated("automation rule");
         onClose();
+      } else {
+        notifyError(res.error);
       }
       return res;
     },

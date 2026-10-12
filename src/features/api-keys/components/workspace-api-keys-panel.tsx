@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -12,6 +11,7 @@ import { TrashIcon } from "@/components/ui/icons";
 import type { ApiKeyRecord } from "@/features/api-keys/api-key-service";
 import { formatDate } from "@/lib/dates";
 import { deleteApiKeyAction } from "@/features/api-keys/actions";
+import { notifyApiKeyCreated, notifyApiKeyRevoked, notifyCopied, notifyError } from "@/lib/notify";
 import { CreateApiKeyButton } from "@/features/api-keys/components/create-api-key-modal";
 
 export function WorkspaceApiKeysPanel({
@@ -40,7 +40,7 @@ export function WorkspaceApiKeysPanel({
     setNewSecretKey(secretKey);
     // NOTE: toast text intentionally omits the key name — the table row
     // already shows it and E2E asserts its uniqueness.
-    toast.success("API key created — copy the secret now");
+    notifyApiKeyCreated();
   }
 
   function handleDelete(keyId: string) {
@@ -53,9 +53,9 @@ export function WorkspaceApiKeysPanel({
       const res = await deleteApiKeyAction(workspaceId, keyId);
       setDeletingId(null);
       if (res.error) {
-        toast.error(res.error);
+        notifyError(res.error);
       } else {
-        toast.success("API key revoked");
+        notifyApiKeyRevoked();
         router.refresh();
       }
     });
@@ -66,7 +66,7 @@ export function WorkspaceApiKeysPanel({
     try {
       await navigator.clipboard.writeText(newSecretKey);
       setCopied(true);
-      toast.success("Secret key copied to clipboard");
+      notifyCopied();
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback
@@ -77,7 +77,7 @@ export function WorkspaceApiKeysPanel({
       document.execCommand("copy");
       document.body.removeChild(textarea);
       setCopied(true);
-      toast.success("Secret key copied to clipboard");
+      notifyCopied();
       setTimeout(() => setCopied(false), 2000);
     }
   }

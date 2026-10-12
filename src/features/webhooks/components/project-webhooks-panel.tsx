@@ -13,6 +13,7 @@ import {
 } from "@/features/webhooks/actions";
 import { CreateWebhookButton } from "./create-webhook-modal";
 import { WebhookLogsModal } from "./webhook-logs-modal";
+import { notifyDeleted, notifyError, notifyUpdated } from "@/lib/notify";
 import type { WebhookDeliveryLogRecord, WebhookRecord } from "@/features/webhooks/webhook-types";
 
 function maskUrl(url: string): string {
@@ -50,30 +51,42 @@ export function ProjectWebhooksPanel({
 
   function handleToggle(wh: WebhookRecord) {
     startTransition(async () => {
-      await toggleWebhookAction(workspaceId, projectId, wh.id, !wh.enabled);
+      const res = await toggleWebhookAction(workspaceId, projectId, wh.id, !wh.enabled);
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyUpdated("webhook");
+      }
     });
   }
 
   function handleDelete(wh: WebhookRecord) {
     if (!confirm(`Delete webhook "${wh.name}"?`)) return;
     startTransition(async () => {
-      await deleteWebhookAction(workspaceId, projectId, wh.id);
+      const res = await deleteWebhookAction(workspaceId, projectId, wh.id);
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyDeleted("webhook");
+      }
     });
   }
 
   function handleTestPing(wh: WebhookRecord) {
     startTransition(async () => {
       const res = await testWebhookPingAction(workspaceId, projectId, wh.id);
-      if (res.success !== undefined) {
-        setTestResults((prev) => ({
-          ...prev,
-          [wh.id]: {
-            success: Boolean(res.success),
-            statusCode: res.statusCode,
-            durationMs: res.durationMs,
-          },
-        }));
+      if (res.error) {
+        notifyError(res.error);
+        return;
       }
+      setTestResults((prev) => ({
+        ...prev,
+        [wh.id]: {
+          success: Boolean(res.success),
+          statusCode: res.statusCode,
+          durationMs: res.durationMs,
+        },
+      }));
     });
   }
 

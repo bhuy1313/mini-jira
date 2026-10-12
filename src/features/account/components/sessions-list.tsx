@@ -10,6 +10,7 @@ import {
   revokeSessionAction,
 } from "@/features/account/actions";
 import { cn } from "@/lib/cn";
+import { notifyDeleted, notifyError } from "@/lib/notify";
 
 function parseUserAgent(ua: string | null): string {
   if (!ua) return "Unknown Device / Browser";
@@ -48,8 +49,10 @@ export function SessionsList({ sessions }: { sessions: UserSession[] }) {
       const res = await revokeSessionAction(sessionId);
       if (!res.success) {
         setError(res.error || "Failed to revoke session");
+        notifyError(res.error);
       } else {
         setSuccess("Session revoked successfully.");
+        notifyDeleted("session");
         router.refresh();
       }
     });
@@ -71,8 +74,10 @@ export function SessionsList({ sessions }: { sessions: UserSession[] }) {
       const res = await revokeOtherSessionsAction();
       if (!res.success) {
         setError(res.error || "Failed to revoke other sessions");
+        notifyError(res.error);
       } else {
         setSuccess(`Successfully signed out of ${res.revokedCount} other session(s).`);
+        notifyDeleted("session");
         router.refresh();
       }
     });

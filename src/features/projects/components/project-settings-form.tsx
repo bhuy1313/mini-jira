@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/inputs";
 import { updateProjectAction } from "@/features/projects/actions";
+import { notifyError, notifyUpdated } from "@/lib/notify";
 
 export function ProjectSettingsForm({
   workspaceId,
@@ -18,8 +19,15 @@ export function ProjectSettingsForm({
   name: string;
   description: string | null;
 }) {
-  const bound = (prev: { error?: string } | undefined, formData: FormData) =>
-    updateProjectAction(workspaceId, projectId, formData);
+  const bound = async (prev: { error?: string } | undefined, formData: FormData) => {
+    const res = await updateProjectAction(workspaceId, projectId, formData);
+    if (res?.error) {
+      notifyError(res.error);
+    } else {
+      notifyUpdated("project");
+    }
+    return res;
+  };
   const [state, formAction, pending] = useActionState(bound, {});
 
   return (

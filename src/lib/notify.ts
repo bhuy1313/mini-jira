@@ -25,6 +25,11 @@ export type NotifyKind =
   | "status"
   | "member"
   | "custom field"
+  | "webhook"
+  | "automation rule"
+  | "profile"
+  | "password"
+  | "session"
   | "notification settings";
 
 const KIND_LABEL: Record<NotifyKind, string> = {
@@ -40,6 +45,11 @@ const KIND_LABEL: Record<NotifyKind, string> = {
   status: "Status",
   member: "Member",
   "custom field": "Custom field",
+  webhook: "Webhook",
+  "automation rule": "Automation rule",
+  profile: "Profile",
+  password: "Password",
+  session: "Session",
   "notification settings": "Notification settings",
 };
 
@@ -62,4 +72,21 @@ export function notifyMoved(kind: NotifyKind): void {
 /** Lỗi hệ thống (mạng/500/retry hết) — message server nếu có, không thì fallback. */
 export function notifyError(message?: string): void {
   toast.error(message || "Something went wrong. Please try again.");
+}
+
+/**
+ * Trường hợp đặc biệt giữ text cũ (không gộp vào CRUD chung):
+ * - API key: text hướng dẫn copy secret + "revoked" theo ngôn ngữ domain.
+ * - Copy clipboard: feedback thao tác, không gắn entity động.
+ */
+export function notifyApiKeyCreated(): void {
+  toast.success("API key created — copy the secret now");
+}
+
+export function notifyApiKeyRevoked(): void {
+  toast.success("API key revoked");
+}
+
+export function notifyCopied(): void {
+  toast.success("Copied to clipboard");
 }

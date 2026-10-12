@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { deleteProjectPermanentlyAction } from "@/features/projects/actions";
+import { notifyError } from "@/lib/notify";
 
 export function DeleteProjectButton({
   workspaceId,
@@ -16,8 +17,12 @@ export function DeleteProjectButton({
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(
-    (_prev: { error?: string }, _formData: FormData) =>
-      deleteProjectPermanentlyAction(workspaceId, projectId),
+    async (_prev: { error?: string }, _formData: FormData) => {
+      // Thành công thì action redirect — chỉ toast khi lỗi.
+      const res = await deleteProjectPermanentlyAction(workspaceId, projectId);
+      if (res?.error) notifyError(res.error);
+      return res;
+    },
     {},
   );
 

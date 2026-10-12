@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/inputs";
@@ -11,6 +10,7 @@ import { PlusIcon } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { createApiKeyAction } from "@/features/api-keys/actions";
 import { formatDateInputValue } from "@/lib/dates";
+import { notifyError } from "@/lib/notify";
 
 export function CreateApiKeyModal({
   workspaceId,
@@ -63,7 +63,7 @@ export function CreateApiKeyModal({
       const res = await createApiKeyAction(workspaceId, formData);
       if (res.error) {
         setError(res.error);
-        toast.error(res.error);
+        notifyError(res.error);
       } else if (res.secretKey) {
         onClose();
         onKeyGenerated(name.trim(), res.secretKey);

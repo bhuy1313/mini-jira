@@ -16,6 +16,7 @@ import {
 } from "@/features/automation/actions";
 import { CreateRuleButton } from "@/features/automation/components/create-rule-modal";
 import { formatDateTime } from "@/lib/dates";
+import { notifyDeleted, notifyError, notifyUpdated } from "@/lib/notify";
 import type {
   AutomationExecutionLogRecord,
   AutomationRuleRecord,
@@ -123,13 +124,26 @@ function RuleRow({
   const [deleting, setDeleting] = useState(false);
 
   const [, doDeleteAction, deletePending] = useActionState(
-    (_prev: { error?: string }) => deleteRuleAction(workspaceId, projectId, rule.id),
+    async (_prev: { error?: string }) => {
+      const res = await deleteRuleAction(workspaceId, projectId, rule.id);
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyDeleted("automation rule");
+      }
+      return res;
+    },
     {},
   );
 
   function handleToggle() {
     startTransition(async () => {
-      await toggleRuleAction(workspaceId, projectId, rule.id, !rule.enabled);
+      const res = await toggleRuleAction(workspaceId, projectId, rule.id, !rule.enabled);
+      if (res?.error) {
+        notifyError(res.error);
+      } else {
+        notifyUpdated("automation rule");
+      }
     });
   }
 

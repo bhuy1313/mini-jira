@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { CheckIcon } from "@/components/ui/icons";
 import { changePasswordAction } from "@/features/account/actions";
 import { cn } from "@/lib/cn";
+import { notifyError, notifyUpdated } from "@/lib/notify";
 
 export function PasswordForm() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -50,8 +51,10 @@ export function PasswordForm() {
 
       if (!res.success) {
         setError(res.error || "Failed to change password");
+        notifyError(res.error);
       } else {
         setSuccess("Password changed successfully!");
+        notifyUpdated("password");
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");

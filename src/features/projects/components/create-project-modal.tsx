@@ -7,6 +7,7 @@ import { BoardsIcon, CloseIcon, PlusIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import { Spinner } from "@/components/ui/spinner";
 import { createProjectAction } from "@/features/projects/actions";
+import { notifyError } from "@/lib/notify";
 
 export function CreateProjectModal({
   open,
@@ -23,10 +24,9 @@ export function CreateProjectModal({
   const [keyTouched, setKeyTouched] = useState(false);
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string }, formData: FormData) => {
+      // Thành công thì action redirect sang board (toast không kịp hiện).
       const res = await createProjectAction(workspaceId, formData);
-      if (!res?.error) {
-        handleClose();
-      }
+      if (res?.error) notifyError(res.error);
       return res;
     },
     {},

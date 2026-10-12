@@ -7,6 +7,7 @@ import { Input, Select } from "@/components/ui/inputs";
 import { Modal } from "@/components/ui/modal";
 import { PlusIcon } from "@/components/ui/icons";
 import { createWebhookAction } from "@/features/webhooks/actions";
+import { notifyCreated, notifyError } from "@/lib/notify";
 import { WEBHOOK_EVENT_TYPES, type WebhookEventType, type WebhookFormat } from "@/features/webhooks/webhook-types";
 
 const EVENT_LABELS: Record<WebhookEventType, string> = {
@@ -48,7 +49,10 @@ export function CreateWebhookModal({
       }
       const res = await createWebhookAction(workspaceId, projectId, formData);
       if (!res.error) {
+        notifyCreated("webhook");
         onClose();
+      } else {
+        notifyError(res.error);
       }
       return res;
     },

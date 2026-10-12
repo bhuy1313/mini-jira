@@ -17,6 +17,7 @@ import {
   SettingsIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
+import { notifyError } from "@/lib/notify";
 
 function ActionButton({
   workspaceId,
@@ -35,7 +36,9 @@ function ActionButton({
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(async (_prev: { error?: string }) => {
+    // Archive/restore redirect về /projects khi thành công — chỉ toast khi lỗi.
     const res = await action(workspaceId, projectId);
+    if (res?.error) notifyError(res.error);
     router.refresh();
     return res;
   }, {});
