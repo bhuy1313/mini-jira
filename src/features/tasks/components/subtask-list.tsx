@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
+import { notifyCreated, notifyError, notifyUpdated } from "@/lib/notify";
 import { createSubtaskAction, toggleSubtaskDoneAction, unlinkSubtaskAction } from "@/features/tasks/actions";
 import { withMutation } from "@/lib/mutation-busy";
 import { resolveRealTaskId, trackPendingTask } from "@/features/tasks/pending-task-ids";
@@ -71,8 +72,10 @@ export function SubtaskList({
       );
       if (res.error) {
         setError(res.error);
+        notifyError(res.error);
         setLocalSubtasks(initialSubtasks);
       } else {
+        notifyUpdated("subtask");
         router.refresh();
       }
     });
@@ -93,8 +96,10 @@ export function SubtaskList({
       );
       if (res.error) {
         setError(res.error);
+        notifyError(res.error);
         setLocalSubtasks(initialSubtasks);
       } else {
+        notifyUpdated("subtask");
         router.refresh();
       }
     });
@@ -149,9 +154,11 @@ export function SubtaskList({
       if (res.error || !res.task) {
         resolveCreate(null);
         setError(res.error ?? "Sub-task could not be created.");
+        notifyError(res.error);
         setLocalSubtasks(initialSubtasks);
       } else {
         resolveCreate(res.task.id);
+        notifyCreated("subtask");
         router.refresh();
       }
     });

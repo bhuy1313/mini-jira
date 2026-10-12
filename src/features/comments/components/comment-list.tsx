@@ -10,6 +10,7 @@ import { addCommentAction, deleteCommentAction, updateCommentAction } from "@/fe
 import type { CommentRecord } from "@/features/comments/comment-service";
 import type { MemberWithUser } from "@/features/workspaces/workspace-service";
 import { formatDateTime } from "@/lib/dates";
+import { notifyCreated, notifyDeleted, notifyError, notifyUpdated } from "@/lib/notify";
 import { withMutation } from "@/lib/mutation-busy";
 import { withActionRetry } from "@/lib/action-retry";
 import { resolveRealTaskId, trackPendingTask } from "@/features/tasks/pending-task-ids";
@@ -53,7 +54,9 @@ function CommentItem({
       if (res.error) {
         setLocalContent(prevText);
         setIsEditing(true);
+        notifyError(res.error);
       } else {
+        notifyUpdated("comment");
         router.refresh();
       }
       return res;
@@ -70,7 +73,10 @@ function CommentItem({
         deleteCommentAction(workspaceId, projectId, realId),
       );
       if (!res?.error) {
+        notifyDeleted("comment");
         router.refresh();
+      } else {
+        notifyError(res.error);
       }
       return res;
     },
@@ -218,6 +224,7 @@ export function CommentList({
       );
       if (!res?.error && res?.comment) {
         resolveCreate(res.comment.id);
+        notifyCreated("comment");
         // Swap the temp entry for the real one so follow-up edit/delete
         // use a server-known id even before props refresh.
         setComments((prev) => {
@@ -228,6 +235,7 @@ export function CommentList({
         router.refresh();
       } else {
         resolveCreate(null);
+        notifyError(res?.error);
         setComments((prev) => prev.filter((c) => c.id !== tempId));
       }
       return res;

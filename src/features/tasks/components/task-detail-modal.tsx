@@ -11,6 +11,7 @@ import { Markdown } from "@/components/ui/markdown";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
+import { notifyError } from "@/lib/notify";
 import { resolveRealTaskId } from "@/features/tasks/pending-task-ids";
 import { withActionRetry } from "@/lib/action-retry";
 import { formatDate } from "@/lib/dates";
@@ -135,11 +136,13 @@ function TaskLabelPicker({
       res = await withActionRetry(() => action(workspaceId, projectId, realTaskId, labelId));
     } catch {
       setError("Could not save. Please try again.");
+      notifyError();
       setLocalLabels(initialLabels);
       return;
     }
     if (res.error) {
       setError(res.error);
+      notifyError(res.error);
       setLocalLabels(initialLabels);
       return;
     }
@@ -418,9 +421,11 @@ export function TaskDetailModal({
       const value = String(formData.get("title") || "");
       const realId = await resolveRealTaskId(task.id);
       // Title updates are idempotent sets — safe to retry on transport abort.
-      return withActionRetry(() =>
+      const res = await withActionRetry(() =>
         updateTaskFieldAction(workspaceId, projectId, realId, "title", value),
       );
+      if (res?.error) notifyError(res.error);
+      return res;
     },
     {},
   );
@@ -429,9 +434,11 @@ export function TaskDetailModal({
     async (_prev: { error?: string }, formData: FormData) => {
       const value = String(formData.get("description") || "");
       const realId = await resolveRealTaskId(task.id);
-      return withActionRetry(() =>
+      const res = await withActionRetry(() =>
         updateTaskFieldAction(workspaceId, projectId, realId, "description", value),
       );
+      if (res?.error) notifyError(res.error);
+      return res;
     },
     {},
   );
@@ -460,6 +467,7 @@ export function TaskDetailModal({
       );
     } catch {
       // Transport aborted after request was sent — reconcile with server.
+      notifyError();
     }
     router.refresh();
   }
@@ -480,10 +488,12 @@ export function TaskDetailModal({
       );
     } catch {
       setCustomFieldError("Could not save. Please try again.");
+      notifyError();
       return;
     }
     if (res.error) {
       setCustomFieldError(res.error);
+      notifyError(res.error);
     }
     // NOTE: no router.refresh() here on purpose. The drawer already shows
     // the optimistic value, the board never displays custom fields, and an

@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
+import { notifyCreated, notifyDeleted, notifyError, notifyMoved } from "@/lib/notify";
 import { resolveRealTaskId, trackPendingTask } from "@/features/tasks/pending-task-ids";
 import { withActionRetry } from "@/lib/action-retry";
 import { beginMutation, endMutation, isMutationBusy } from "@/lib/mutation-busy";
@@ -201,9 +202,11 @@ function SortableTaskCard({
       const value = String(formData.get("title") || "");
       const realId = await resolveRealTaskId(task.id);
       // Title updates are idempotent sets — safe to retry on transport abort.
-      return withActionRetry(() =>
+      const res = await withActionRetry(() =>
         updateTaskFieldAction(workspaceId, projectId, realId, "title", value),
       );
+      if (res?.error) notifyError(res.error);
+      return res;
     },
     {},
   );
@@ -705,11 +708,13 @@ export function KanbanBoard({
         }));
         const error = res?.error ?? "Task could not be created.";
         setBoardError(error);
+        notifyError(res?.error);
         return { error };
       }
 
       const createdTask = res.task;
       resolveCreate(createdTask.id);
+      notifyCreated("task");
       setSelectedTaskId((prev) => (prev === tempId ? createdTask.id : prev));
       setItems((prev) => {
         const next: Record<string, TaskRecord[]> = {};
@@ -730,6 +735,7 @@ export function KanbanBoard({
       }));
       const error = "Task could not be created.";
       setBoardError(error);
+      notifyError();
       return { error };
     } finally {
       setIsMutating(false);
@@ -816,9 +822,13 @@ export function KanbanBoard({
       const res = await moveTaskAction(workspaceId, projectId, realId, targetStatusId);
       if (res?.error) {
         setItems(groupByStatus(tasks, statuses));
+        notifyError(res.error);
+      } else {
+        notifyMoved("task");
       }
     } catch {
       setItems(groupByStatus(tasks, statuses));
+      notifyError();
     } finally {
       setIsMutating(false);
       endMutation();
@@ -859,7 +869,9 @@ export function KanbanBoard({
       if (res?.error) {
         setItems(groupByStatus(tasks, statuses));
         setBoardError(res.error);
+        notifyError(res.error);
       } else {
+        notifyDeleted("task");
         setItems((prev) => ({
           ...prev,
           [containerId]: (prev[containerId] ?? []).filter(
@@ -870,6 +882,7 @@ export function KanbanBoard({
     } catch {
       setItems(groupByStatus(tasks, statuses));
       setBoardError("Task could not be deleted.");
+      notifyError();
     } finally {
       setIsMutating(false);
       endMutation();
@@ -1024,13 +1037,16 @@ export function KanbanBoard({
       if (targetSprint !== "all") {
         const sprintValue = targetSprint === "backlog" ? "" : targetSprint;
         try {
-          await updateTaskFieldAction(
+          const res = await updateTaskFieldAction(
             workspaceId,
             projectId,
             activeTaskId,
             "sprintId",
             sprintValue,
           );
+          if (res?.error) notifyError(res.error);
+        } catch {
+          notifyError();
         } finally {
           setIsMutating(false);
           endMutation();
@@ -1082,9 +1098,11 @@ export function KanbanBoard({
       );
       if (res?.error) {
         setItems(groupByStatus(tasks, statuses));
+        notifyError(res.error);
       }
     } catch {
       setItems(groupByStatus(tasks, statuses));
+      notifyError();
     } finally {
       setIsMutating(false);
       endMutation();
