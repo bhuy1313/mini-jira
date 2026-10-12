@@ -57,8 +57,7 @@ export const attachmentStorage: AttachmentStorage = resolveStorage();
 
 export type AttachmentStorageDriver = "r2" | "local" | "noop";
 
-export function getAttachmentStorageDriverName(): AttachmentStorageDriver {
-  if (
+export function getAttachmentStorageDriverName(): AttachmentStorageDriver {  if (
     process.env.R2_ACCOUNT_ID &&
     process.env.R2_ACCESS_KEY_ID &&
     process.env.R2_SECRET_ACCESS_KEY &&
@@ -70,5 +69,17 @@ export function getAttachmentStorageDriverName(): AttachmentStorageDriver {
     return "local";
   }
   return "noop";
+}
+
+/**
+ * Công tắc tính năng đính kèm. Mặc định bám theo driver: noop (production
+ * chưa cấu hình storage) thì tắt để không hứa hão — upload/download đều lỗi.
+ * Override tường minh bằng ATTACHMENTS_ENABLED=1/0 khi cần.
+ */
+export function isAttachmentsEnabled(): boolean {
+  const flag = process.env.ATTACHMENTS_ENABLED;
+  if (flag === "1") return true;
+  if (flag === "0") return false;
+  return getAttachmentStorageDriverName() !== "noop";
 }
 

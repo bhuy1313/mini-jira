@@ -371,6 +371,7 @@ export function TaskDetailModal({
   worklogs = [],
   actorRole,
   actorUserId,
+  attachmentsEnabled = true,
   onClose,
   onStatusChange,
   onTaskPatch,
@@ -391,6 +392,8 @@ export function TaskDetailModal({
   worklogs?: WorklogRecord[];
   actorRole: Role;
   actorUserId: string;
+  /** Ẩn tab đính kèm khi storage tắt. */
+  attachmentsEnabled?: boolean;
   onClose: () => void;
   onStatusChange?: (statusId: string) => void;
   onTaskPatch?: (taskId: string, patch: Partial<TaskRecord>) => void;
@@ -782,6 +785,7 @@ export function TaskDetailModal({
                 activeTab === "attachments"
                   ? "border-primary text-primary-deep"
                   : "border-transparent text-ink-faint hover:text-ink-soft",
+                !attachmentsEnabled && "hidden",
               )}
             >
               Attachments{" "}
@@ -829,14 +833,20 @@ export function TaskDetailModal({
             ) : activeTab === "activities" ? (
               <ActivityTimeline activities={activities} />
             ) : activeTab === "attachments" ? (
-              <AttachmentList
-                taskId={task.id}
-                workspaceId={workspaceId}
-                projectId={projectId}
-                attachments={attachments}
-                actorRole={actorRole}
-                actorUserId={actorUserId}
-              />
+              attachmentsEnabled ? (
+                <AttachmentList
+                  taskId={task.id}
+                  workspaceId={workspaceId}
+                  projectId={projectId}
+                  attachments={attachments}
+                  actorRole={actorRole}
+                  actorUserId={actorUserId}
+                />
+              ) : (
+                <p className="py-6 text-center text-xs text-ink-faint">
+                  Attachments are disabled on this deployment.
+                </p>
+              )
             ) : activeTab === "labels" ? (
               <TaskLabelPicker
                 taskId={task.id}

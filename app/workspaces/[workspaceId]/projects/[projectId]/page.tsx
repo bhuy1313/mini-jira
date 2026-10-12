@@ -9,6 +9,7 @@ import { canManageLabels, canUpdateProject, PRIORITIES } from "@/features/author
 import { LabelManager } from "@/features/labels/components/label-manager";
 import { getProjectDetail } from "@/features/projects/queries";
 import { KanbanBoard } from "@/features/tasks/components/kanban-board";
+import { isAttachmentsEnabled } from "@/features/attachments/attachment-storage";
 import { getProjectBoard } from "@/features/tasks/queries";
 import type { TaskFilterInput } from "@/features/tasks/task-service";
 
@@ -117,6 +118,7 @@ export default async function ProjectDetailPage({
           <KanbanBoard
             tasks={board.tasks}
             tasksTruncated={board.tasksTruncated}
+            attachmentsEnabled={isAttachmentsEnabled()}
             statuses={board.statuses}
             sprints={board.sprints}
             sprintTotals={board.sprintTotals}

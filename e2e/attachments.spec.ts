@@ -2,6 +2,9 @@ import { test, expect, type Page } from "@playwright/test";
 
 import { cleanupUsers, createWorkspace, registerUser, signIn, uniqueEmail } from "./helpers";
 
+// Yêu cầu storage thật: chạy trên dev server (local disk) hoặc prod có R2 /
+// ATTACHMENT_UPLOAD_DIR. Prod build trần (driver noop) fail là đúng —
+// tab đính kèm bị ẩn, không phải bug.
 test.setTimeout(180_000);
 
 async function openProjects(page: Page, workspaceId: string): Promise<void> {

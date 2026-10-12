@@ -595,6 +595,7 @@ export function KanbanBoard({
   actorRole,
   actorUserId,
   tasksTruncated = false,
+  attachmentsEnabled = true,
 }: {
   tasks: TaskRecord[];
   statuses?: StatusRecord[];
@@ -618,6 +619,8 @@ export function KanbanBoard({
   actorUserId: string;
   /** Board vượt cap và đã bị cắt — hiện banner thay vì mất lặng lẽ. */
   tasksTruncated?: boolean;
+  /** Ẩn tab đính kèm khi storage tắt (Vercel chưa cấu hình R2). */
+  attachmentsEnabled?: boolean;
 }) {
   const router = useRouter();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -1240,6 +1243,7 @@ export function KanbanBoard({
           worklogs={worklogsByTask[selectedTask.id] ?? []}
           actorRole={actorRole}
           actorUserId={actorUserId}
+          attachmentsEnabled={attachmentsEnabled}
           onClose={() => setSelectedTaskId(null)}
           onStatusChange={(newStatusId) => handleMoveStatus(selectedTask.id, newStatusId)}
           onTaskPatch={handlePatchTask}
