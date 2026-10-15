@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { NavigationLoadingToast } from "@/components/navigation-loading-toast";
-import { Toaster } from "sonner";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -40,13 +41,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <ThemeProvider>{children}</ThemeProvider>
-        <Toaster
-          richColors
-          closeButton
+        <ToastContainer
           position="bottom-right"
-          toastOptions={{
-            style: { borderRadius: 0 },
-          }}
+          autoClose={4000}
+          closeButton
+          pauseOnHover
+          draggable
+          theme="light"
         />
         <NavigationLoadingToast />
       </body>

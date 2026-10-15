@@ -1,11 +1,11 @@
-// Toast feedback (sonner) — text cố định, không tên động (bẫy public-api.spec).
+// Toast feedback (react-toastify) — text cố định, không tên động (bẫy public-api.spec).
 import { test, expect, type Page } from "@playwright/test";
 
 import { cleanupUsers, createWorkspace, registerUser, signIn, uniqueEmail } from "./helpers";
 
 test.setTimeout(180_000);
 
-const toaster = (page: Page) => page.locator("[data-sonner-toaster]");
+const toaster = (page: Page) => page.locator(".Toastify");
 
 async function openProjects(page: Page, workspaceId: string): Promise<void> {
   await page.goto(`/workspaces/${workspaceId}/projects`);

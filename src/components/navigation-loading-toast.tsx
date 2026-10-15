@@ -11,9 +11,9 @@ import { subscribeNavigation } from "@/lib/navigation-pending";
 const FAILSAFE_MS = 10_000;
 
 /**
- * Thay thế NavigationProgress (thanh top 3px) bằng toast loading duy nhất.
- * Toast vuông + thanh bottom teal được style bằng CSS toàn cục trong
- * `app/globals.css` ([data-type="loading"]::after).
+ * Thay thế NavigationProgress (thanh top 3px) bằng toast loading duy nhất
+ * (React Toastify). Kiểu vuông + progress bar cấu hình ở `app/layout.tsx`
+ * (ToastContainer) và `app/globals.css`.
  */
 export function NavigationLoadingToast() {
   const pathname = usePathname();

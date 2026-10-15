@@ -1,7 +1,7 @@
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 
 /**
- * Điểm gọi toast duy nhất của app (ngoài file này không gọi `sonner` trực tiếp).
+ * Điểm gọi toast duy nhất của app (ngoài file này không gọi `react-toastify` trực tiếp).
  *
  * Hai quy ước cứng:
  * 1. Text CỐ ĐỊNH, không nhúng nội dung user-generated (tên task/label/key…).
@@ -92,16 +92,20 @@ export function notifyCopied(): void {
 }
 
 /**
- * Navigation loading — id cố định để start/dismiss cùng một toast.
+ * Navigation loading — toastId cố định để start/dismiss cùng một toast.
  * Text cố định (không tên route động) theo quy ước toast gate.
  */
 export const NAV_LOADING_ID = "navigation-loading";
 
 export function notifyNavigationStart(): string | number {
-  return toast.loading("Đang tải trang...", {
-    id: NAV_LOADING_ID,
-    duration: Infinity,
-  });
+  if (!toast.isActive(NAV_LOADING_ID)) {
+    toast.loading("Đang tải trang...", {
+      toastId: NAV_LOADING_ID,
+      autoClose: false,
+      closeButton: false,
+    });
+  }
+  return NAV_LOADING_ID;
 }
 
 export function notifyNavigationDone(): void {

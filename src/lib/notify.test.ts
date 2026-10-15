@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import {
   NAV_LOADING_ID,
   notifyCreated,
@@ -12,12 +12,13 @@ import {
   notifyUpdated,
 } from "./notify";
 
-vi.mock("sonner", () => ({
+vi.mock("react-toastify", () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
     loading: vi.fn(),
     dismiss: vi.fn(),
+    isActive: vi.fn(),
   },
 }));
 
@@ -55,12 +56,21 @@ describe("notify — text cố định, không nội dung user-generated", () =>
   });
 
   it("navigation loading dùng id cố định, text cố định", () => {
+    vi.mocked(toast.isActive).mockReturnValue(false);
     notifyNavigationStart();
     expect(toast.loading).toHaveBeenCalledWith("Đang tải trang...", {
-      id: NAV_LOADING_ID,
-      duration: Infinity,
+      toastId: NAV_LOADING_ID,
+      autoClose: false,
+      closeButton: false,
     });
     notifyNavigationDone();
     expect(toast.dismiss).toHaveBeenCalledWith(NAV_LOADING_ID);
+  });
+
+  it("không spam toast khi navigation đã pending", () => {
+    vi.mocked(toast.isActive).mockReturnValue(true);
+    const id = notifyNavigationStart();
+    expect(toast.loading).not.toHaveBeenCalled();
+    expect(id).toBe(NAV_LOADING_ID);
   });
 });
