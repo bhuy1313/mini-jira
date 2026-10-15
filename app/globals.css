@@ -209,5 +209,13 @@ body {
     .Toastify__toast-container .Toastify__progress-bar--animated {
       animation-duration: 4000ms !important;
     }
+
+    /* NGOẠI LỆ 2: spinner của toast loading được xoay ngay cả khi
+     * reduced-motion (user yêu cầu) — nó là tín hiệu trạng thái
+     * loading, không phải animation trang trí. */
+    .Toastify__spinner {
+      animation-duration: 0.8s !important;
+      animation-iteration-count: infinite !important;
+    }
   }
 }
