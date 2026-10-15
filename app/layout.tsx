@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { NavigationLoadingToast } from "@/components/navigation-loading-toast";
-import { ToastContainer } from "react-toastify";
+import { ThemedToastContainer } from "@/components/themed-toast-container";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 
@@ -40,15 +40,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full flex flex-col bg-paper text-ink">
-        <ThemeProvider>{children}</ThemeProvider>
-        <ToastContainer
-          position="bottom-right"
-          autoClose={4000}
-          closeButton
-          pauseOnHover
-          draggable
-          theme="light"
-        />
+        <ThemeProvider>
+          {children}
+          <ThemedToastContainer />
+        </ThemeProvider>
         <NavigationLoadingToast />
       </body>
     </html>
