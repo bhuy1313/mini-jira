@@ -24,8 +24,10 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
-  // Toast gate: sonner chỉ được gọi từ src/lib/notify.ts (text cố định,
-  // không tên động — public-api.spec từng strict-violation vì toast chứa tên).
+  // Toast gate: `toast` object của sonner chỉ được gọi từ src/lib/notify.ts
+  // (text cố định, không tên động — public-api.spec từng strict-violation
+  // vì toast chứa tên). `Toaster` component (layout) và mock trong *.test.*
+  // không nằm trong diện gate.
   {
     rules: {
       "no-restricted-imports": [
@@ -34,6 +36,7 @@ const eslintConfig = defineConfig([
           paths: [
             {
               name: "sonner",
+              importNames: ["toast"],
               message:
                 "Import toast helpers from @/lib/notify instead of sonner directly.",
             },
@@ -43,7 +46,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["src/lib/notify.ts"],
+    files: ["src/lib/notify.ts", "**/*.test.ts", "**/*.test.tsx"],
     rules: {
       "no-restricted-imports": "off",
     },

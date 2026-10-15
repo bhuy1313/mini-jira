@@ -15,29 +15,13 @@ import type { Actor } from "@/features/authorization/actor";
  * user, workspaces, notifications) before rendering anything, so every
  * in-app navigation stalled behind the slowest query even though the page
  * content and sidebar nav need none of that data. Each slot below fetches
- * only what its UI needs and streams in behind a same-footprint skeleton,
- * so the shell + page start painting after the auth gate alone.
+ * only what its UI needs and streams in (Suspense `fallback={null}` —
+ * không skeleton, loading báo qua toast toàn cục), so the shell + page
+ * start painting after the auth gate alone.
  *
  * All queries are `React.cache` memoized per request — slots mounted twice
  * (desktop + mobile) still hit the database once.
  */
-
-/** Same-footprint skeletons so streamed swaps never shift layout. */
-export function SwitcherSkeleton() {
-  return <div aria-hidden className="h-10 w-full animate-pulse rounded-xl border border-rule/80 bg-paper/60" />;
-}
-
-export function BellSkeleton() {
-  return <div aria-hidden className="size-8 animate-pulse rounded-md border border-rule bg-paper" />;
-}
-
-export function CrumbSkeleton() {
-  return <span aria-hidden className="inline-block h-4 w-24 animate-pulse rounded bg-ink/10" />;
-}
-
-export function FooterSkeleton() {
-  return <div aria-hidden className="h-12 w-full animate-pulse rounded-xl border border-rule/70 bg-paper/60" />;
-}
 
 /** Workspace name for the header breadcrumb. */
 export async function WorkspaceCrumbSlot({ workspaceId }: { workspaceId: string }) {

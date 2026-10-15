@@ -2,10 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { toast } from "sonner";
 import {
+  NAV_LOADING_ID,
   notifyCreated,
   notifyDeleted,
   notifyError,
   notifyMoved,
+  notifyNavigationDone,
+  notifyNavigationStart,
   notifyUpdated,
 } from "./notify";
 
@@ -13,6 +16,8 @@ vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
+    loading: vi.fn(),
+    dismiss: vi.fn(),
   },
 }));
 
@@ -47,5 +52,15 @@ describe("notify — text cố định, không nội dung user-generated", () =>
     expect(toast.error).toHaveBeenCalledWith("Something went wrong. Please try again.");
     notifyError("Network down");
     expect(toast.error).toHaveBeenCalledWith("Network down");
+  });
+
+  it("navigation loading dùng id cố định, text cố định", () => {
+    notifyNavigationStart();
+    expect(toast.loading).toHaveBeenCalledWith("Đang tải trang...", {
+      id: NAV_LOADING_ID,
+      duration: Infinity,
+    });
+    notifyNavigationDone();
+    expect(toast.dismiss).toHaveBeenCalledWith(NAV_LOADING_ID);
   });
 });

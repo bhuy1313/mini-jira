@@ -90,3 +90,20 @@ export function notifyApiKeyRevoked(): void {
 export function notifyCopied(): void {
   toast.success("Copied to clipboard");
 }
+
+/**
+ * Navigation loading — id cố định để start/dismiss cùng một toast.
+ * Text cố định (không tên route động) theo quy ước toast gate.
+ */
+export const NAV_LOADING_ID = "navigation-loading";
+
+export function notifyNavigationStart(): string | number {
+  return toast.loading("Đang tải trang...", {
+    id: NAV_LOADING_ID,
+    duration: Infinity,
+  });
+}
+
+export function notifyNavigationDone(): void {
+  toast.dismiss(NAV_LOADING_ID);
+}

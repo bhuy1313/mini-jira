@@ -8,12 +8,8 @@ import { ChevronRightIcon } from "@/components/ui/icons";
 import { WorkspaceNav } from "@/features/workspaces/components/workspace-nav";
 import { requireActor } from "@/features/workspaces/session";
 import {
-  BellSkeleton,
-  CrumbSkeleton,
-  FooterSkeleton,
   MobileAccountSlot,
   NotificationBellSlot,
-  SwitcherSkeleton,
   UserFooterSlot,
   WorkspaceCrumbSlot,
   WorkspaceSwitcherSlot,
@@ -55,7 +51,7 @@ export default async function WorkspaceLayout({
 
           {/* Workspace Switcher in dedicated header section (avoids overflow clipping) */}
           <div className="shrink-0 border-b border-rule/70 p-3 bg-panel/50">
-            <Suspense fallback={<SwitcherSkeleton />}>
+            <Suspense fallback={null}>
               <WorkspaceSwitcherSlot workspaceId={workspaceId} variant="dropdown" />
             </Suspense>
           </div>
@@ -67,7 +63,7 @@ export default async function WorkspaceLayout({
 
           {/* Fixed Footer: User profile & Logout - ALWAYS visible at viewport bottom */}
           <div className="shrink-0 border-t border-rule p-3 bg-panel">
-            <Suspense fallback={<FooterSkeleton />}>
+            <Suspense fallback={null}>
               <UserFooterSlot actor={actor} />
             </Suspense>
           </div>
@@ -94,12 +90,12 @@ export default async function WorkspaceLayout({
                     Workspaces
                   </Link>
                   <ChevronRightIcon className="size-3.5 shrink-0 text-ink-faint" />
-                  <Suspense fallback={<CrumbSkeleton />}>
+                  <Suspense fallback={null}>
                     <WorkspaceCrumbSlot workspaceId={workspaceId} />
                   </Suspense>
                 </div>
                 <div className="lg:hidden">
-                  <Suspense fallback={<SwitcherSkeleton />}>
+                  <Suspense fallback={null}>
                     <WorkspaceSwitcherSlot workspaceId={workspaceId} variant="dropdown" />
                   </Suspense>
                 </div>
@@ -109,15 +105,15 @@ export default async function WorkspaceLayout({
                 <CommandPaletteTrigger />
                 <ThemeQuickToggle />
                 <div className="hidden sm:block">
-                  <Suspense fallback={<BellSkeleton />}>
+                  <Suspense fallback={null}>
                     <NotificationBellSlot workspaceId={workspaceId} />
                   </Suspense>
                 </div>
                 <div className="lg:hidden flex items-center gap-2">
-                  <Suspense fallback={<BellSkeleton />}>
+                  <Suspense fallback={null}>
                     <NotificationBellSlot workspaceId={workspaceId} />
                   </Suspense>
-                  <Suspense fallback={<BellSkeleton />}>
+                  <Suspense fallback={null}>
                     <MobileAccountSlot actor={actor} />
                   </Suspense>
                 </div>
