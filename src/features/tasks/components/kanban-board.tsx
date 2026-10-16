@@ -228,8 +228,19 @@ function SortableTaskCard({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
+      onClick={(e) => {
+        // Click cả card mở detail; bỏ qua khi bấm vào control
+        // tương tác (input rename, select move, nút drag/delete/open).
+        // Drag chỉ bắt đầu từ grip handle nên không xung đột.
+        if (isDragging) return;
+        const el = e.target as HTMLElement | null;
+        if (el?.closest?.("button, input, select, textarea, a, form, [contenteditable]")) {
+          return;
+        }
+        onOpenDetail();
+      }}
       className={cn(
-        "group relative flex overflow-hidden rounded-lg border border-rule bg-panel text-ink shadow-xs transition-all duration-150 hover:shadow-md hover:border-primary-ink/40 hover:bg-primary-soft/30",
+        "group relative flex cursor-pointer overflow-hidden rounded-lg border border-rule bg-panel text-ink shadow-xs transition-all duration-150 hover:shadow-md hover:border-primary-ink/40 hover:bg-primary-soft/30",
         isDragging && "rotate-2 opacity-40 shadow-lg",
       )}
     >
